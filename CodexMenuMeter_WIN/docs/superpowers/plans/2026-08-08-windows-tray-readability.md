@@ -192,11 +192,11 @@ git commit -m "fix: render Windows tray UI at native DPI"
 - Consumes: the verified GUI executable.
 - Produces: current user documentation and final binary.
 
-- [ ] **Step 1: Update user documentation**
+- [x] **Step 1: Update user documentation**
 
 Document number-only display, `--`, optional gray status dot, removed task row, settings window, Per-Monitor V2 rendering, and the existing real-interface test boundary. Do not claim task status is available.
 
-- [ ] **Step 2: Run clean verification**
+- [x] **Step 2: Run clean verification**
 
 Stop only the test-launched `CodexMenuMeter.exe`, then run:
 
@@ -209,15 +209,15 @@ git diff --check
 
 Expected: clean build, all tests pass, and no whitespace errors.
 
-- [ ] **Step 3: Copy and launch the verified binary**
+- [x] **Step 3: Copy and launch the verified binary**
 
 Copy `build\CodexMenuMeter.exe` to `dist\CodexMenuMeter.exe`, launch it while official Codex is running, and verify the process remains alive. Record the build/dist SHA-256 and require exact equality.
 
-- [ ] **Step 4: Inspect Windows UI**
+- [x] **Step 4: Inspect Windows UI**
 
 Verify with real Windows UI that the icon shows a large number without `%`, toggling the setting shows/hides only a gray dot, the menu contains no task-status row, and menu/settings text is crisp at the current DPI. Do not substitute mocked quota data for the live quota value.
 
-- [ ] **Step 5: Commit Task 3**
+- [x] **Step 5: Commit Task 3**
 
 ```powershell
 git add -- CodexMenuMeter_WIN
