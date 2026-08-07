@@ -28,7 +28,7 @@
 - Produces: `TrayDpi.SupportedSizes`, `TrayDpi.ClosestSupportedSize(int)`, and `TrayLayout.PercentBounds`.
 - Consumes: existing `TrayLayout.Calculate(int, bool)`.
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 ```csharp
 AssertEqual("16,20,24,32,40,48,64", string.Join(",", TrayDpi.SupportedSizes), "supported icon frames");
@@ -44,13 +44,13 @@ AssertTrue(Contains(new Rectangle(0, 0, 16, 16), percent.PercentBounds), "percen
 
 Update the dotted-layout test to require dot, number, and percent rectangles to remain pairwise non-overlapping and inside the icon.
 
-- [ ] **Step 2: Run RED**
+- [x] **Step 2: Run RED**
 
 Run `powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -Test`.
 
 Expected: compilation fails for `SupportedSizes`, `ClosestSupportedSize`, and `PercentBounds`.
 
-- [ ] **Step 3: Implement the layout**
+- [x] **Step 3: Implement the layout**
 
 Add `PercentBounds` to `TrayLayout`. For frame size `size`:
 
@@ -66,11 +66,11 @@ Rectangle numberBounds = new Rectangle(showDot ? dot + 1 : 0, 0,
 
 Add the ordered frame list and choose the frame with the smallest absolute distance, preferring the larger frame on ties.
 
-- [ ] **Step 4: Run GREEN**
+- [x] **Step 4: Run GREEN**
 
 Run the same test command. Expected: all tests pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```powershell
 git add -- CodexMenuMeter_WIN/src/TrayApplicationContext.cs CodexMenuMeter_WIN/tests/CodexMenuMeterTests.cs CodexMenuMeter_WIN/docs/superpowers/plans/2026-08-08-crisp-tray-percent.md

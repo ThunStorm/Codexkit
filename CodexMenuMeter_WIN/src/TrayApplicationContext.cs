@@ -25,22 +25,25 @@ namespace CodexMenuMeter
     {
         public readonly Rectangle DotBounds;
         public readonly Rectangle NumberBounds;
+        public readonly Rectangle PercentBounds;
 
-        private TrayLayout(Rectangle dotBounds, Rectangle numberBounds)
+        private TrayLayout(Rectangle dotBounds, Rectangle numberBounds, Rectangle percentBounds)
         {
             DotBounds = dotBounds;
             NumberBounds = numberBounds;
+            PercentBounds = percentBounds;
         }
 
         public static TrayLayout Calculate(int size, bool showDot)
         {
-            int edge = Math.Max(1, size / 16);
-            if (!showDot)
-                return new TrayLayout(Rectangle.Empty,
-                    new Rectangle(edge, edge, size - edge * 2, size - edge * 2));
-            int dot = Math.Max(4, size * 7 / 24);
-            return new TrayLayout(new Rectangle(edge, edge, dot, dot),
-                new Rectangle(edge, dot + edge * 2, size - edge * 2, size - dot - edge * 3));
+            int percent = Math.Max(6, size * 3 / 8);
+            Rectangle percentBounds = new Rectangle(size - percent, size - percent, percent, percent);
+            int topHeight = size - percent;
+            int dot = showDot ? Math.Max(4, size * 7 / 24) : 0;
+            Rectangle dotBounds = showDot ? new Rectangle(0, 0, dot, dot) : Rectangle.Empty;
+            int numberLeft = showDot ? dot + 1 : 0;
+            Rectangle numberBounds = new Rectangle(numberLeft, 0, size - numberLeft, topHeight);
+            return new TrayLayout(dotBounds, numberBounds, percentBounds);
         }
     }
 
@@ -178,6 +181,7 @@ namespace CodexMenuMeter
     internal static class TrayDpi
     {
         private const int SmallIconMetric = 49;
+        public static readonly int[] SupportedSizes = { 16, 20, 24, 32, 40, 48, 64 };
 
         [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         private static extern IntPtr FindWindow(string className, string windowName);
@@ -196,9 +200,25 @@ namespace CodexMenuMeter
                 IntPtr taskbar = FindWindow("Shell_TrayWnd", null);
                 uint dpi = taskbar == IntPtr.Zero ? 0 : GetDpiForWindow(taskbar);
                 int size = dpi == 0 ? 0 : GetSystemMetricsForDpi(SmallIconMetric, dpi);
-                return size > 0 ? size : fallback;
+                return ClosestSupportedSize(size > 0 ? size : fallback);
             }
-            catch (EntryPointNotFoundException) { return fallback; }
+            catch (EntryPointNotFoundException) { return ClosestSupportedSize(fallback); }
+        }
+
+        public static int ClosestSupportedSize(int requested)
+        {
+            int best = SupportedSizes[0];
+            int bestDistance = Math.Abs(requested - best);
+            foreach (int candidate in SupportedSizes)
+            {
+                int distance = Math.Abs(requested - candidate);
+                if (distance <= bestDistance)
+                {
+                    best = candidate;
+                    bestDistance = distance;
+                }
+            }
+            return best;
         }
     }
 

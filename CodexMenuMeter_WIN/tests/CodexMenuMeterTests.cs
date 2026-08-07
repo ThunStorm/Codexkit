@@ -105,11 +105,22 @@ namespace CodexMenuMeter
                 TrayLayout plain = TrayLayout.Calculate(24, false);
                 AssertEqual(Rectangle.Empty, plain.DotBounds, "hidden dot has no bounds");
                 AssertTrue(Contains(new Rectangle(0, 0, 24, 24), plain.NumberBounds), "plain number fits icon");
+                AssertEqual("16,20,24,32,40,48,64", string.Join(",", TrayDpi.SupportedSizes), "supported icon frames");
+                AssertEqual(16, TrayDpi.ClosestSupportedSize(17), "17px selects 16px frame");
+                AssertEqual(24, TrayDpi.ClosestSupportedSize(23), "23px selects 24px frame");
+                AssertEqual(40, TrayDpi.ClosestSupportedSize(36), "tie selects larger frame");
+
+                TrayLayout percent = TrayLayout.Calculate(16, false);
+                AssertTrue(percent.PercentBounds.Width >= 6, "percent remains readable at 16px");
+                AssertFalse(percent.NumberBounds.IntersectsWith(percent.PercentBounds), "number avoids percent");
+                AssertTrue(Contains(new Rectangle(0, 0, 16, 16), percent.PercentBounds), "percent fits icon");
                 TrayLayout dotted = TrayLayout.Calculate(24, true);
                 AssertTrue(dotted.DotBounds.Width > 0, "shown dot reserves pixels");
-                AssertTrue(dotted.NumberBounds.Width >= 20, "dotted number keeps nearly full width");
                 AssertTrue(Contains(new Rectangle(0, 0, 24, 24), dotted.NumberBounds), "dotted number fits icon");
+                AssertTrue(Contains(new Rectangle(0, 0, 24, 24), dotted.PercentBounds), "dotted percent fits icon");
                 AssertFalse(dotted.DotBounds.IntersectsWith(dotted.NumberBounds), "dot and number do not overlap");
+                AssertFalse(dotted.DotBounds.IntersectsWith(dotted.PercentBounds), "dot and percent do not overlap");
+                AssertFalse(dotted.NumberBounds.IntersectsWith(dotted.PercentBounds), "number and percent do not overlap");
 
                 TaskTracker timedTracker = new TaskTracker();
                 TaskAggregate timedFirst = timedTracker.Update(new[] {
