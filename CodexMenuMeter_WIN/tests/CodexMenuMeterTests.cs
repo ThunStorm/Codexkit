@@ -104,34 +104,26 @@ namespace CodexMenuMeter
 
                 TrayLayout plain = TrayLayout.Calculate(24, false);
                 AssertEqual(Rectangle.Empty, plain.DotBounds, "hidden dot has no bounds");
-                AssertTrue(Contains(new Rectangle(0, 0, 24, 24), plain.NumberBounds), "plain number fits icon");
+                AssertEqual(new Rectangle(0, 0, 24, 24), plain.NumberBounds, "plain number fills icon");
                 AssertEqual("16,20,24,32,40,48,64", string.Join(",", TrayDpi.SupportedSizes), "supported icon frames");
                 AssertEqual(16, TrayDpi.ClosestSupportedSize(17), "17px selects 16px frame");
                 AssertEqual(24, TrayDpi.ClosestSupportedSize(23), "23px selects 24px frame");
                 AssertEqual(40, TrayDpi.ClosestSupportedSize(36), "tie selects larger frame");
 
-                TrayLayout percent = TrayLayout.Calculate(16, false);
-                AssertTrue(percent.PercentBounds.Width >= 6, "percent remains readable at 16px");
-                AssertFalse(percent.NumberBounds.IntersectsWith(percent.PercentBounds), "number avoids percent");
-                AssertTrue(Contains(new Rectangle(0, 0, 16, 16), percent.PercentBounds), "percent fits icon");
                 TrayLayout dotted = TrayLayout.Calculate(24, true);
                 AssertTrue(dotted.DotBounds.Width > 0, "shown dot reserves pixels");
-                AssertTrue(Contains(new Rectangle(0, 0, 24, 24), dotted.NumberBounds), "dotted number fits icon");
-                AssertTrue(Contains(new Rectangle(0, 0, 24, 24), dotted.PercentBounds), "dotted percent fits icon");
+                AssertEqual(new Rectangle(0, dotted.DotBounds.Bottom + 1, 24,
+                    23 - dotted.DotBounds.Bottom), dotted.NumberBounds, "dotted number uses full width below dot");
                 AssertFalse(dotted.DotBounds.IntersectsWith(dotted.NumberBounds), "dot and number do not overlap");
-                AssertFalse(dotted.DotBounds.IntersectsWith(dotted.PercentBounds), "dot and percent do not overlap");
-                AssertFalse(dotted.NumberBounds.IntersectsWith(dotted.PercentBounds), "number and percent do not overlap");
 
-                using (System.Drawing.Icon rendered = TrayIconRenderer.Render("39", false))
+                using (System.Drawing.Icon rendered = TrayIconRenderer.Render("1", false, 16))
                 using (Bitmap renderedBitmap = rendered.ToBitmap())
                 {
                     TrayLayout renderedLayout = TrayLayout.Calculate(renderedBitmap.Width, false);
                     AssertTrue(HasVisiblePixel(renderedBitmap, renderedLayout.NumberBounds), "number draws visible pixels");
-                    Rectangle percentInterior = new Rectangle(renderedLayout.PercentBounds.X + 1,
-                        renderedLayout.PercentBounds.Y + 1,
-                        renderedLayout.PercentBounds.Width - 2,
-                        renderedLayout.PercentBounds.Height - 2);
-                    AssertTrue(HasVisiblePixel(renderedBitmap, percentInterior), "percent draws visible interior pixels");
+                    AssertFalse(HasVisiblePixel(renderedBitmap, new Rectangle(10, 10, 6, 6)),
+                        "tray omits lower-right percent mark");
+                    AssertFalse(HasColoredPixel(renderedBitmap), "transparent icon has no ClearType color fringe");
                 }
                 foreach (int iconSize in TrayDpi.SupportedSizes)
                     using (System.Drawing.Icon rendered = TrayIconRenderer.Render("39", false, iconSize))
@@ -243,6 +235,17 @@ namespace CodexMenuMeter
             for (int y = bounds.Top; y < bounds.Bottom; y++)
                 for (int x = bounds.Left; x < bounds.Right; x++)
                     if (bitmap.GetPixel(x, y).A != 0) return true;
+            return false;
+        }
+
+        private static bool HasColoredPixel(Bitmap bitmap)
+        {
+            for (int y = 0; y < bitmap.Height; y++)
+                for (int x = 0; x < bitmap.Width; x++)
+                {
+                    Color pixel = bitmap.GetPixel(x, y);
+                    if (pixel.A != 0 && (pixel.R != pixel.G || pixel.G != pixel.B)) return true;
+                }
             return false;
         }
 

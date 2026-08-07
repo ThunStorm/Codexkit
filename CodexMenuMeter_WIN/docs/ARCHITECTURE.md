@@ -9,6 +9,6 @@
 
 `Domain.cs` 负责额度窗口和状态规则，`AppServerClient.cs` 负责 JSONL 请求，`TrayApplicationContext.cs` 负责进程、托盘和启动项。单实例互斥量防止重复图标。
 
-`app.manifest` 在控件创建前启用 Per-Monitor V2。图标渲染器读取任务栏 DPI，从 16/20/24/32/40/48/64px 中选择最近尺寸并直接栅格化：左侧为 GDI 提示的大数字，右下为整数像素 `%`，没有二次缩放或字形描边；可选灰点由设置控制。菜单和设置窗口使用系统字体及原生 DPI 缩放。
+`app.manifest` 在控件创建前启用 Per-Monitor V2。图标渲染器读取任务栏 DPI，从 16/20/24/32/40/48/64px 中选择最近尺寸，并以 GDI+ `SingleBitPerPixelGridFit` 直接栅格化常规窄体数字，没有 `%`、ClearType 彩边、二次缩放或字形描边；可选灰点由设置控制。菜单和设置窗口使用系统字体及原生 DPI 缩放。
 
 启动项只写当前用户注册表。程序移动后再次启动会刷新已启用启动项的路径。

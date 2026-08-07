@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
+using System.Drawing.Text;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -24,26 +25,21 @@ namespace CodexMenuMeter
     {
         public readonly Rectangle DotBounds;
         public readonly Rectangle NumberBounds;
-        public readonly Rectangle PercentBounds;
 
-        private TrayLayout(Rectangle dotBounds, Rectangle numberBounds, Rectangle percentBounds)
+        private TrayLayout(Rectangle dotBounds, Rectangle numberBounds)
         {
             DotBounds = dotBounds;
             NumberBounds = numberBounds;
-            PercentBounds = percentBounds;
         }
 
         public static TrayLayout Calculate(int size, bool showDot)
         {
-            int percent = Math.Max(6, size * 3 / 8);
-            Rectangle percentBounds = new Rectangle(size - percent, size - percent, percent, percent);
             int dot = showDot ? Math.Max(4, size * 7 / 24) : 0;
             Rectangle dotBounds = showDot ? new Rectangle(0, 0, dot, dot) : Rectangle.Empty;
-            int numberLeft = showDot ? dot + 1 : 0;
             Rectangle numberBounds = showDot
-                ? new Rectangle(numberLeft, 0, size - numberLeft, size - percent)
-                : new Rectangle(0, 0, size - percent, size);
-            return new TrayLayout(dotBounds, numberBounds, percentBounds);
+                ? new Rectangle(0, dot + 1, size, size - dot - 1)
+                : new Rectangle(0, 0, size, size);
+            return new TrayLayout(dotBounds, numberBounds);
         }
     }
 
@@ -244,7 +240,6 @@ namespace CodexMenuMeter
                     using (Brush dot = new SolidBrush(Color.FromArgb(128, 128, 128)))
                         graphics.FillEllipse(dot, layout.DotBounds);
                 DrawFittedText(graphics, text, layout.NumberBounds, foreground);
-                if (text != "--") DrawPercent(graphics, layout.PercentBounds, foreground);
 
                 IntPtr handle = bitmap.GetHicon();
                 try
@@ -257,31 +252,23 @@ namespace CodexMenuMeter
 
         private static void DrawFittedText(Graphics graphics, string text, Rectangle bounds, Color foreground)
         {
-            TextFormatFlags flags = TextFormatFlags.NoPadding | TextFormatFlags.SingleLine
-                | TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix;
-            for (int pixels = bounds.Height * 2; pixels >= 4; pixels--)
-            {
-                using (Font font = new Font("Arial Narrow", pixels, FontStyle.Bold, GraphicsUnit.Pixel))
-                {
-                    Size measured = TextRenderer.MeasureText(graphics, text, font,
-                        new Size(int.MaxValue, int.MaxValue), flags);
-                    if (measured.Width > bounds.Width || measured.Height > bounds.Height) continue;
-                    TextRenderer.DrawText(graphics, text, font, bounds, foreground, Color.Transparent, flags);
-                    return;
-                }
-            }
-        }
-
-        private static void DrawPercent(Graphics graphics, Rectangle bounds, Color foreground)
-        {
-            int dot = Math.Max(2, bounds.Width / 4);
+            graphics.TextRenderingHint = TextRenderingHint.SingleBitPerPixelGridFit;
             using (Brush brush = new SolidBrush(foreground))
+            using (StringFormat format = new StringFormat(StringFormat.GenericTypographic))
             {
-                graphics.FillRectangle(brush, bounds.Left, bounds.Top, dot, dot);
-                graphics.FillRectangle(brush, bounds.Right - dot, bounds.Bottom - dot, dot, dot);
-                for (int offset = 0; offset < bounds.Width; offset++)
-                    graphics.FillRectangle(brush, bounds.Right - 1 - offset,
-                        bounds.Top + offset * bounds.Height / bounds.Width, 1, 1);
+                format.Alignment = StringAlignment.Center;
+                format.LineAlignment = StringAlignment.Center;
+                format.FormatFlags |= StringFormatFlags.NoWrap;
+                for (int pixels = bounds.Height * 2; pixels >= 4; pixels--)
+                {
+                    using (Font font = new Font("Arial Narrow", pixels, FontStyle.Regular, GraphicsUnit.Pixel))
+                    {
+                        SizeF measured = graphics.MeasureString(text, font, PointF.Empty, format);
+                        if (measured.Width > bounds.Width || measured.Height > bounds.Height) continue;
+                        graphics.DrawString(text, font, brush, bounds, format);
+                        return;
+                    }
+                }
             }
         }
 
