@@ -107,6 +107,7 @@ namespace CodexMenuMeter
                 AssertTrue(Contains(new Rectangle(0, 0, 24, 24), plain.NumberBounds), "plain number fits icon");
                 TrayLayout dotted = TrayLayout.Calculate(24, true);
                 AssertTrue(dotted.DotBounds.Width > 0, "shown dot reserves pixels");
+                AssertTrue(dotted.NumberBounds.Width >= 20, "dotted number keeps nearly full width");
                 AssertTrue(Contains(new Rectangle(0, 0, 24, 24), dotted.NumberBounds), "dotted number fits icon");
                 AssertFalse(dotted.DotBounds.IntersectsWith(dotted.NumberBounds), "dot and number do not overlap");
 

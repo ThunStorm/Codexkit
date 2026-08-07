@@ -118,7 +118,7 @@ git commit -m "feat: maximize tray quota number"
 - Consumes: `TrayLayout.Calculate(int, bool)` and `TrayText.Format(int?)`.
 - Produces: `TrayDpi.IconSize()`, `MeterSettings.ShowTaskStatusDot`, `SettingsForm`, and `TrayIconRenderer.Render(string, bool)`.
 
-- [ ] **Step 1: Add a failing manifest/build check**
+- [x] **Step 1: Add a failing manifest/build check**
 
 Add a PowerShell verification after GUI compilation:
 
@@ -130,7 +130,7 @@ if (-not (Test-Path -LiteralPath (Join-Path $projectRoot 'app.manifest'))) {
 
 Run the production build. Expected: fail because `app.manifest` does not exist.
 
-- [ ] **Step 2: Add the Per-Monitor V2 manifest**
+- [x] **Step 2: Add the Per-Monitor V2 manifest**
 
 Create `app.manifest` with `dpiAware=true/pm` and `dpiAwareness=PerMonitorV2,PerMonitor`. Pass it to the GUI compiler:
 
@@ -138,13 +138,13 @@ Create `app.manifest` with `dpiAware=true/pm` and `dpiAwareness=PerMonitorV2,Per
 /win32manifest:(Join-Path $projectRoot 'app.manifest')
 ```
 
-- [ ] **Step 3: Implement exact-DPI rendering**
+- [x] **Step 3: Implement exact-DPI rendering**
 
 Add `TrayDpi` using `FindWindow("Shell_TrayWnd")`, `GetDpiForWindow`, and `GetSystemMetricsForDpi(SM_CXSMICON, dpi)`, with `SystemInformation.SmallIconSize.Width` fallback. Replace the fixed 64×64 renderer with a bitmap whose width and height equal `TrayDpi.IconSize()`.
 
 Build the quota glyph with `GraphicsPath.AddString`, scale it into `TrayLayout.NumberBounds`, and draw a one-pixel contrasting outline plus foreground fill. Draw the optional gray ellipse in `DotBounds`. Do not draw a colored tile or `%`.
 
-- [ ] **Step 4: Implement registry preference and settings window**
+- [x] **Step 4: Implement registry preference and settings window**
 
 Extend `MeterSettings`:
 
@@ -154,7 +154,7 @@ public static bool ShowTaskStatusDot { get; set; }
 
 Store `ShowTaskStatusDot` as DWORD under `HKCU\Software\CodexMenuMeter`. Add `SettingsForm` with `AutoScaleMode = AutoScaleMode.Dpi`, system message-box font, dot and startup checkboxes, explanatory label, Save, and Cancel. Save invokes a callback so the tray icon refreshes immediately.
 
-- [ ] **Step 5: Simplify the tray menu and state**
+- [x] **Step 5: Simplify the tray menu and state**
 
 Delete the runtime `taskState`, `taskError`, task rows, aggregate tooltip text, and the unavailable task menu row. Set `menu.Font = SystemFonts.MenuFont`, add “设置…”, and call:
 
@@ -163,7 +163,7 @@ Delete the runtime `taskState`, `taskError`, task rows, aggregate tooltip text, 
     TrayIconRenderer.Render(text, MeterSettings.ShowTaskStatusDot)
 ```
 
-- [ ] **Step 6: Run tests and build**
+- [x] **Step 6: Run tests and build**
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -Test
@@ -172,7 +172,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1
 
 Expected: tests pass and `build\CodexMenuMeter.exe` compiles with the manifest.
 
-- [ ] **Step 7: Commit Task 2**
+- [x] **Step 7: Commit Task 2**
 
 ```powershell
 git add -- CodexMenuMeter_WIN/app.manifest CodexMenuMeter_WIN/build.ps1 CodexMenuMeter_WIN/src/TrayApplicationContext.cs

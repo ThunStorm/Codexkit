@@ -29,8 +29,13 @@ if ($Test -or $Live) {
     exit 0
 }
 
+$manifest = Join-Path $projectRoot 'app.manifest'
+if (-not (Test-Path -LiteralPath $manifest)) {
+    throw 'Per-Monitor V2 manifest is missing.'
+}
+
 $appExe = Join-Path $buildDir 'CodexMenuMeter.exe'
-& $compiler /nologo /target:winexe /out:$appExe /main:CodexMenuMeter.Program `
+& $compiler /nologo /target:winexe /out:$appExe /main:CodexMenuMeter.Program /win32manifest:$manifest `
     /reference:System.Core.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll /reference:System.Web.Extensions.dll `
     (Join-Path $projectRoot 'src\Domain.cs') `
     (Join-Path $projectRoot 'src\AppServerClient.cs') `
