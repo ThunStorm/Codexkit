@@ -125,6 +125,9 @@ namespace CodexMenuMeter
                         "tray omits lower-right percent mark");
                     AssertFalse(HasColoredPixel(renderedBitmap), "transparent icon has no ClearType color fringe");
                 }
+                using (System.Drawing.Icon bold = TrayIconRenderer.Render("39", false, 16))
+                using (Bitmap boldBitmap = bold.ToBitmap())
+                    AssertTrue(CountVisiblePixels(boldBitmap) >= 45, "16px number uses bold pixel density");
                 foreach (int iconSize in TrayDpi.SupportedSizes)
                     using (System.Drawing.Icon rendered = TrayIconRenderer.Render("39", false, iconSize))
                         AssertEqual(iconSize, rendered.Width, iconSize + "px renderer frame");
@@ -247,6 +250,15 @@ namespace CodexMenuMeter
                     if (pixel.A != 0 && (pixel.R != pixel.G || pixel.G != pixel.B)) return true;
                 }
             return false;
+        }
+
+        private static int CountVisiblePixels(Bitmap bitmap)
+        {
+            int visible = 0;
+            for (int y = 0; y < bitmap.Height; y++)
+                for (int x = 0; x < bitmap.Width; x++)
+                    if (bitmap.GetPixel(x, y).A != 0) visible++;
+            return visible;
         }
 
         private static string Format(object value)

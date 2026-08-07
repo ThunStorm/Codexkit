@@ -261,7 +261,7 @@ namespace CodexMenuMeter
                 format.FormatFlags |= StringFormatFlags.NoWrap;
                 for (int pixels = bounds.Height * 2; pixels >= 4; pixels--)
                 {
-                    using (Font font = new Font("Arial Narrow", pixels, FontStyle.Regular, GraphicsUnit.Pixel))
+                    using (Font font = new Font("Arial Narrow", pixels, FontStyle.Bold, GraphicsUnit.Pixel))
                     {
                         SizeF measured = graphics.MeasureString(text, font, PointF.Empty, format);
                         if (measured.Width > bounds.Width || measured.Height > bounds.Height) continue;
