@@ -300,10 +300,7 @@ namespace CodexMenuMeter
         public async Task<IList<TaskSummary>> ReadTasksAsync()
         {
             await InitializeAsync().ConfigureAwait(false);
-            string[] sources = {
-                "cli", "vscode", "exec", "appServer", "subAgent", "subAgentReview", "subAgentCompact",
-                "subAgentThreadSpawn", "subAgentOther", "unknown"
-            };
+            string[] sources = { "appServer" };
             string response = await RequestAsync("thread/list", new {
                 limit = 100,
                 sortKey = "updated_at",

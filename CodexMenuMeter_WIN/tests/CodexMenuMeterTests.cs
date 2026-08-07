@@ -85,6 +85,28 @@ namespace CodexMenuMeter
                     "{\"method\":\"unknown/notification\",\"params\":{}}").Length,
                     "unknown notification ignored");
 
+                AssertTrue(CodexProcessMonitor.IsOfficial("ChatGPT",
+                    @"C:\Program Files\WindowsApps\OpenAI.Codex_26.803.5235.0_x64__2p2nqsd0c76g0\app\ChatGPT.exe"),
+                    "official desktop process");
+                AssertFalse(CodexProcessMonitor.IsOfficial("codex",
+                    @"C:\Program Files\WindowsApps\OpenAI.Codex_26.803.5235.0_x64__2p2nqsd0c76g0\app\resources\codex.exe"),
+                    "CLI is excluded");
+                AssertFalse(CodexProcessMonitor.IsOfficial("ChatGPT", @"C:\Tools\ChatGPT.exe"),
+                    "unrelated ChatGPT process excluded");
+                AssertEqual("69%", TrayText.Format(69), "visible percent");
+                AssertEqual("--%", TrayText.Format(null), "unknown percent");
+
+                TaskTracker timedTracker = new TaskTracker();
+                TaskAggregate timedFirst = timedTracker.Update(new[] {
+                    new TaskSummary("timed", "Timed", TaskState.Active, null, DateTime.UtcNow)
+                }, true);
+                AssertTrue(timedFirst.Tasks[0].ObservedStart.HasValue, "active task gets observed start");
+                DateTime? firstObserved = timedFirst.Tasks[0].ObservedStart;
+                TaskAggregate timedSecond = timedTracker.Update(new[] {
+                    new TaskSummary("timed", "Timed", TaskState.Active, null, DateTime.UtcNow.AddSeconds(1))
+                }, true);
+                AssertEqual(firstObserved, timedSecond.Tasks[0].ObservedStart, "observed start remains stable");
+
                 Console.WriteLine("PASS " + passed + " tests");
                 return 0;
             }
@@ -100,6 +122,16 @@ namespace CodexMenuMeter
             if (!object.Equals(expected, actual))
                 throw new Exception(name + ": expected " + Format(expected) + ", got " + Format(actual));
             passed++;
+        }
+
+        private static void AssertTrue(bool actual, string name)
+        {
+            AssertEqual(true, actual, name);
+        }
+
+        private static void AssertFalse(bool actual, string name)
+        {
+            AssertEqual(false, actual, name);
         }
 
         private static string Format(object value)

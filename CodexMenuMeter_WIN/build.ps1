@@ -16,9 +16,11 @@ New-Item -ItemType Directory -Force -Path $buildDir | Out-Null
 
 if ($Test) {
     $testExe = Join-Path $buildDir 'CodexMenuMeterTests.exe'
-    & $compiler /nologo /target:exe /out:$testExe /main:CodexMenuMeter.Tests /reference:System.Web.Extensions.dll `
+    & $compiler /nologo /target:exe /out:$testExe /main:CodexMenuMeter.Tests `
+        /reference:System.Core.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll /reference:System.Web.Extensions.dll `
         (Join-Path $projectRoot 'src\Domain.cs') `
         (Join-Path $projectRoot 'src\AppServerClient.cs') `
+        (Join-Path $projectRoot 'src\TrayApplicationContext.cs') `
         (Join-Path $projectRoot 'tests\CodexMenuMeterTests.cs')
     if ($LASTEXITCODE -ne 0) { throw 'Test compilation failed.' }
     & $testExe
@@ -26,4 +28,12 @@ if ($Test) {
     exit 0
 }
 
-throw 'Application build is added after the production entry point exists.'
+$appExe = Join-Path $buildDir 'CodexMenuMeter.exe'
+& $compiler /nologo /target:winexe /out:$appExe /main:CodexMenuMeter.Program `
+    /reference:System.Core.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll /reference:System.Web.Extensions.dll `
+    (Join-Path $projectRoot 'src\Domain.cs') `
+    (Join-Path $projectRoot 'src\AppServerClient.cs') `
+    (Join-Path $projectRoot 'src\TrayApplicationContext.cs') `
+    (Join-Path $projectRoot 'src\Program.cs')
+if ($LASTEXITCODE -ne 0) { throw 'Application compilation failed.' }
+Write-Output $appExe

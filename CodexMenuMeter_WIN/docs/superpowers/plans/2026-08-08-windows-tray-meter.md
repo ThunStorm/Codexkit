@@ -155,7 +155,7 @@ Task<IList<TaskSummary>> ReadTasksAsync();
 void Dispose();
 ```
 
-Start `codex app-server --listen stdio://`, redirect stdin/stdout/stderr, remove `OPENAI_API_KEY`, `CODEX_API_KEY`, `AWS_SECRET_ACCESS_KEY`, and `AWS_SESSION_TOKEN` from the child environment, send newline-delimited JSON, and route responses by integer `id`. Ignore unknown notifications. `ReadQuotaAsync` calls `account/read` before `account/rateLimits/read`; `ReadTasksAsync` calls `thread/list` with all documented `sourceKinds`, newest-first ordering, and a limit of 100, then returns only active/error summaries without reading turns or items.
+Start `codex app-server --listen stdio://`, redirect stdin/stdout/stderr, remove `OPENAI_API_KEY`, `CODEX_API_KEY`, `AWS_SECRET_ACCESS_KEY`, and `AWS_SESSION_TOKEN` from the child environment, send newline-delimited JSON, and route responses by integer `id`. Ignore unknown notifications. `ReadQuotaAsync` calls `account/read` before `account/rateLimits/read`; `ReadTasksAsync` calls `thread/list` with `sourceKinds: ["appServer"]`, newest-first ordering, and a limit of 100, then returns only active/error summaries without reading turns or items. This excludes terminal CLI and VS Code sessions.
 
 - [x] **Step 4: Run all tests and verify GREEN**
 
@@ -163,7 +163,7 @@ Run `powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -Test`.
 
 Expected: all parser and domain tests pass.
 
-- [ ] **Step 5: Commit Task 2**
+- [x] **Step 5: Commit Task 2**
 
 ```powershell
 git add -- CodexMenuMeter_WIN/src/AppServerClient.cs CodexMenuMeter_WIN/tests/CodexMenuMeterTests.cs CodexMenuMeter_WIN/build.ps1
@@ -182,7 +182,7 @@ git commit -m "feat: add Codex app-server client"
 - Consumes: domain types and `AppServerClient` from Tasks 1-2.
 - Produces: `CodexProcessMonitor.IsOfficial(string, string)`, `TrayIconRenderer.Render(string, TaskColor)`, `StartupRegistration.Enabled`, and the `CodexMenuMeter.exe` GUI entry point.
 
-- [ ] **Step 1: Add failing process and display tests**
+- [x] **Step 1: Add failing process and display tests**
 
 ```csharp
 AssertTrue(CodexProcessMonitor.IsOfficial("ChatGPT",
@@ -195,13 +195,13 @@ AssertEqual("69%", TrayText.Format(69), "visible percent");
 AssertEqual("--%", TrayText.Format(null), "unknown percent");
 ```
 
-- [ ] **Step 2: Run tests and verify RED**
+- [x] **Step 2: Run tests and verify RED**
 
 Run `powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -Test`.
 
 Expected: compilation fails because the process and display helpers do not exist.
 
-- [ ] **Step 3: Implement the WinForms application**
+- [x] **Step 3: Implement the WinForms application**
 
 `Program.Main` runs `Application.Run(new TrayApplicationContext())` with visual styles enabled. `TrayApplicationContext` must:
 
@@ -217,7 +217,7 @@ Expected: compilation fails because the process and display helpers do not exist
 
 `StartupRegistration` reads/writes only `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`. First run enables the value; the menu toggles it. No administrator elevation is requested.
 
-- [ ] **Step 4: Run tests and build the GUI executable**
+- [x] **Step 4: Run tests and build the GUI executable**
 
 Run:
 

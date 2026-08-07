@@ -87,6 +87,7 @@ namespace CodexMenuMeter
     internal sealed class TaskTracker
     {
         private bool sawActive;
+        private readonly Dictionary<string, DateTime> observedStarts = new Dictionary<string, DateTime>();
 
         public TaskAggregate Update(IEnumerable<TaskSummary> tasks, bool sourceAvailable)
         {
@@ -96,8 +97,24 @@ namespace CodexMenuMeter
                 return new TaskAggregate(TaskColor.Gray, new List<TaskSummary>());
             }
 
-            List<TaskSummary> active = (tasks ?? Enumerable.Empty<TaskSummary>())
+            List<TaskSummary> current = (tasks ?? Enumerable.Empty<TaskSummary>())
                 .Where(delegate(TaskSummary task) { return task != null && task.State != TaskState.Idle; })
+                .ToList();
+            HashSet<string> currentIds = new HashSet<string>(current.Select(delegate(TaskSummary task) { return task.Id; }));
+            foreach (string endedId in observedStarts.Keys.Where(delegate(string id) { return !currentIds.Contains(id); }).ToList())
+                observedStarts.Remove(endedId);
+            DateTime now = DateTime.UtcNow;
+            current = current.Select(delegate(TaskSummary task) {
+                DateTime start;
+                if (!observedStarts.TryGetValue(task.Id, out start))
+                {
+                    start = task.ObservedStart ?? now;
+                    observedStarts[task.Id] = start;
+                }
+                return new TaskSummary(task.Id, task.Name, task.State, start, task.UpdatedAt);
+            }).ToList();
+
+            List<TaskSummary> active = current
                 .OrderBy(delegate(TaskSummary task) { return Priority(task.State); })
                 .ThenByDescending(delegate(TaskSummary task) { return task.UpdatedAt; })
                 .Take(5)
@@ -119,6 +136,7 @@ namespace CodexMenuMeter
         public void Reset()
         {
             sawActive = false;
+            observedStarts.Clear();
         }
 
         private static int Priority(TaskState state)
