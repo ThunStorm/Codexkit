@@ -228,7 +228,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1
 
 Expected: tests pass and `build\CodexMenuMeter.exe` exists as a Windows GUI executable.
 
-- [ ] **Step 5: Commit Task 3**
+- [x] **Step 5: Commit Task 3**
 
 ```powershell
 git add -- CodexMenuMeter_WIN/src/Program.cs CodexMenuMeter_WIN/src/TrayApplicationContext.cs CodexMenuMeter_WIN/tests/CodexMenuMeterTests.cs CodexMenuMeter_WIN/build.ps1
@@ -252,15 +252,15 @@ git commit -m "feat: add Windows Codex tray meter"
 - Consumes: the complete app and tests.
 - Produces: current Windows documentation, a verified build, and a recorded task-status feasibility result.
 
-- [ ] **Step 1: Run the live task-status probe**
+- [x] **Step 1: Run the live task-status probe**
 
 With the official Codex desktop app running, launch the meter and observe one real task through start and finish. Record only thread ID, sanitized official name, and state transitions. Pass only if the independent App Server reports the desktop task as `active` and later non-active. If it fails, keep task status gray and omit task rows; do not inspect SQLite or JSONL.
 
-- [ ] **Step 2: Rewrite and rename documentation**
+- [x] **Step 2: Rewrite and rename documentation**
 
 Document exact Windows build/run commands, first-run tray pinning, startup toggle, uninstall steps, protocol fields, status meanings, privacy boundary, test output, task probe result, and unsigned-binary SmartScreen limitation. Replace every macOS path, Swift command, AppKit term, and stale CLI version claim. Delete the redundant preview plan.
 
-- [ ] **Step 3: Run final verification**
+- [x] **Step 3: Run final verification**
 
 Run:
 
@@ -274,11 +274,11 @@ rg -n "macOS|Swift|NSStatus|menu_meter/CodexMenuMeter|T[B]D|T[O]DO" README.md do
 
 Expected: clean build; all tests pass; executable hash prints; stale-document scan has no unintended matches.
 
-- [ ] **Step 4: Copy the verified executable and inspect scope**
+- [x] **Step 4: Copy the verified executable and inspect scope**
 
 Copy `build\CodexMenuMeter.exe` to `dist\CodexMenuMeter.exe`, then run `git diff --check` and `git status --short`. Confirm every new artifact is inside `CodexMenuMeter_WIN` and unrelated user changes remain untouched.
 
-- [ ] **Step 5: Commit Task 4**
+- [x] **Step 5: Commit Task 4**
 
 ```powershell
 git add -- CodexMenuMeter_WIN

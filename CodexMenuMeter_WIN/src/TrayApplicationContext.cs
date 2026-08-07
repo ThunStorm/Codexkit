@@ -50,16 +50,36 @@ namespace CodexMenuMeter
 
         public static string FindCliPath(string desktopPath)
         {
+            return FindCliPath(desktopPath,
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                Environment.GetEnvironmentVariable("PATH") ?? "");
+        }
+
+        internal static string FindCliPath(string desktopPath, string localAppData, string path)
+        {
+            string cacheRoot = Path.Combine(localAppData ?? "", "OpenAI", "Codex", "bin");
+            try
+            {
+                if (Directory.Exists(cacheRoot))
+                {
+                    string cached = Directory.GetFiles(cacheRoot, "codex.exe", SearchOption.AllDirectories)
+                        .OrderByDescending(delegate(string candidate) { return File.GetLastWriteTimeUtc(candidate); })
+                        .FirstOrDefault();
+                    if (cached != null) return cached;
+                }
+            }
+            catch (IOException) { }
+            catch (UnauthorizedAccessException) { }
+
             if (!string.IsNullOrEmpty(desktopPath))
             {
                 string bundled = Path.Combine(Path.GetDirectoryName(desktopPath), "resources", "codex.exe");
                 if (File.Exists(bundled)) return bundled;
             }
-            string path = Environment.GetEnvironmentVariable("PATH") ?? "";
             foreach (string directory in path.Split(Path.PathSeparator))
             {
                 if (string.IsNullOrWhiteSpace(directory)) continue;
-                string candidate = Path.Combine(directory.Trim(), "codex.exe");
+                string candidate = Path.Combine(directory.Trim().Trim('"'), "codex.exe");
                 if (File.Exists(candidate)) return candidate;
             }
             return null;
@@ -85,9 +105,12 @@ namespace CodexMenuMeter
         {
             using (RegistryKey settings = Registry.CurrentUser.CreateSubKey(SettingsKey))
             {
-                if (settings.GetValue("StartupConfigured") != null) return;
-                SetEnabled(true);
-                settings.SetValue("StartupConfigured", 1, RegistryValueKind.DWord);
+                if (settings.GetValue("StartupConfigured") == null)
+                {
+                    SetEnabled(true);
+                    settings.SetValue("StartupConfigured", 1, RegistryValueKind.DWord);
+                }
+                else if (Enabled) SetEnabled(true); // Refresh the path after moving a build.
             }
         }
 
@@ -223,17 +246,8 @@ namespace CodexMenuMeter
                     return;
                 }
 
-                try
-                {
-                    IList<TaskSummary> tasks = await client.ReadTasksAsync();
-                    taskState = taskTracker.Update(tasks, true);
-                    taskError = null;
-                }
-                catch (Exception error)
-                {
-                    taskState = taskTracker.Update(new TaskSummary[0], false);
-                    taskError = SafeMessage(error);
-                }
+                taskState = taskTracker.Update(new TaskSummary[0], false);
+                taskError = "当前 Codex 桌面版未共享任务状态";
 
                 if (forceQuota || DateTime.UtcNow >= nextQuotaRefresh)
                 {

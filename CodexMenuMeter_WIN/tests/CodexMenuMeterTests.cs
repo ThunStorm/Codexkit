@@ -1,4 +1,6 @@
 using System;
+using System.IO;
+using System.Collections.Generic;
 
 namespace CodexMenuMeter
 {
@@ -6,8 +8,9 @@ namespace CodexMenuMeter
     {
         private static int passed;
 
-        public static int Main()
+        public static int Main(string[] args)
         {
+            if (args.Length == 1 && args[0] == "--live") return RunLive();
             try
             {
                 AssertEqual(69, QuotaSelector.Remaining(31), "remaining percent");
@@ -107,6 +110,26 @@ namespace CodexMenuMeter
                 }, true);
                 AssertEqual(firstObserved, timedSecond.Tasks[0].ObservedStart, "observed start remains stable");
 
+                string cliTestRoot = Path.Combine(Path.GetTempPath(), "CodexMenuMeterTests-" + Guid.NewGuid().ToString("N"));
+                try
+                {
+                    string localAppData = Path.Combine(cliTestRoot, "Local");
+                    string cachedCli = Path.Combine(localAppData, "OpenAI", "Codex", "bin", "current", "codex.exe");
+                    string desktopCli = Path.Combine(cliTestRoot, "WindowsApps", "OpenAI.Codex_1", "app", "resources", "codex.exe");
+                    Directory.CreateDirectory(Path.GetDirectoryName(cachedCli));
+                    Directory.CreateDirectory(Path.GetDirectoryName(desktopCli));
+                    File.WriteAllText(cachedCli, "cached");
+                    File.WriteAllText(desktopCli, "packaged");
+                    AssertEqual(cachedCli, CodexProcessMonitor.FindCliPath(
+                        Path.Combine(cliTestRoot, "WindowsApps", "OpenAI.Codex_1", "app", "ChatGPT.exe"),
+                        localAppData,
+                        ""), "user-local CLI beats packaged CLI");
+                }
+                finally
+                {
+                    if (Directory.Exists(cliTestRoot)) Directory.Delete(cliTestRoot, true);
+                }
+
                 Console.WriteLine("PASS " + passed + " tests");
                 return 0;
             }
@@ -115,6 +138,43 @@ namespace CodexMenuMeter
                 Console.Error.WriteLine("FAIL " + error.Message);
                 return 1;
             }
+        }
+
+        private static int RunLive()
+        {
+            string desktopPath = CodexProcessMonitor.FindOfficialPath();
+            string cliPath = CodexProcessMonitor.FindCliPath(desktopPath);
+            if (desktopPath == null || cliPath == null)
+            {
+                Console.Error.WriteLine("LIVE FAIL: official Codex desktop or CLI not found");
+                return 1;
+            }
+
+            using (AppServerClient client = new AppServerClient(cliPath))
+            {
+                try
+                {
+                    QuotaWindow quota = client.ReadQuotaAsync().GetAwaiter().GetResult();
+                    Console.WriteLine("LIVE quota: {0}% remaining ({1} minutes)",
+                        quota.RemainingPercent, quota.DurationMinutes);
+                }
+                catch (Exception error)
+                {
+                    Console.Error.WriteLine("LIVE quota unavailable: " + error.Message);
+                    return 1;
+                }
+
+                try
+                {
+                    IList<TaskSummary> tasks = client.ReadTasksAsync().GetAwaiter().GetResult();
+                    Console.WriteLine("LIVE independent app-server active tasks: " + tasks.Count);
+                }
+                catch (Exception error)
+                {
+                    Console.WriteLine("LIVE task status unavailable: " + error.Message);
+                }
+            }
+            return 0;
         }
 
         private static void AssertEqual(object expected, object actual, string name)

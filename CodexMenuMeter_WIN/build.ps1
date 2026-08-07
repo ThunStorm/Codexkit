@@ -1,5 +1,6 @@
 param(
     [switch]$Test,
+    [switch]$Live,
     [switch]$Clean
 )
 
@@ -14,7 +15,7 @@ if ($Clean -and (Test-Path -LiteralPath $buildDir)) {
 
 New-Item -ItemType Directory -Force -Path $buildDir | Out-Null
 
-if ($Test) {
+if ($Test -or $Live) {
     $testExe = Join-Path $buildDir 'CodexMenuMeterTests.exe'
     & $compiler /nologo /target:exe /out:$testExe /main:CodexMenuMeter.Tests `
         /reference:System.Core.dll /reference:System.Drawing.dll /reference:System.Windows.Forms.dll /reference:System.Web.Extensions.dll `
@@ -23,8 +24,8 @@ if ($Test) {
         (Join-Path $projectRoot 'src\TrayApplicationContext.cs') `
         (Join-Path $projectRoot 'tests\CodexMenuMeterTests.cs')
     if ($LASTEXITCODE -ne 0) { throw 'Test compilation failed.' }
-    & $testExe
-    if ($LASTEXITCODE -ne 0) { throw 'Tests failed.' }
+    if ($Live) { & $testExe --live } else { & $testExe }
+    if ($LASTEXITCODE -ne 0) { throw $(if ($Live) { 'Live validation failed.' } else { 'Tests failed.' }) }
     exit 0
 }
 

@@ -214,6 +214,10 @@ namespace CodexMenuMeter
                 input = null;
                 process = null;
 
+                IDictionary environment = Environment.GetEnvironmentVariables();
+                if (environment.Contains("Path") && environment.Contains("PATH"))
+                    Environment.SetEnvironmentVariable("PATH", null);
+
                 ProcessStartInfo start = new ProcessStartInfo(executablePath, "app-server --listen stdio://");
                 start.UseShellExecute = false;
                 start.CreateNoWindow = true;
