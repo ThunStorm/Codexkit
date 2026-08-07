@@ -106,7 +106,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -Test
 
 Expected: `PASS` with zero failures.
 
-- [ ] **Step 5: Commit Task 1**
+- [x] **Step 5: Commit Task 1**
 
 ```powershell
 git add -- CodexMenuMeter_WIN/src/Domain.cs CodexMenuMeter_WIN/tests/CodexMenuMeterTests.cs CodexMenuMeter_WIN/build.ps1 CodexMenuMeter_WIN/docs/superpowers/plans/2026-08-08-windows-tray-meter.md
@@ -122,17 +122,13 @@ git commit -m "feat: add quota and task domain rules"
 
 **Interfaces:**
 - Consumes: `QuotaWindow`, `QuotaSelector`, and `TaskSummary` from Task 1.
-- Produces: `JsonLineBuffer.Append(string)`, `AppServerResponseParser.ParseQuota(string)`, `AppServerResponseParser.ParseTasks(string)`, and `AppServerClient.RequestAsync(string, object, int)`.
+- Produces: `AppServerResponseParser.ParseQuota(string)`, `AppServerResponseParser.ParseTasks(string)`, and `AppServerClient.RequestAsync(string, object, int)`.
 
-- [ ] **Step 1: Add failing parser tests**
+- [x] **Step 1: Add failing parser tests**
 
-Add assertions for split JSONL input, unknown notifications, numeric `resetsAt`, signed-in accounts where `requiresOpenaiAuth` is true, five-hour selection, and thread statuses:
+Add assertions for unknown notifications, numeric `resetsAt`, signed-in accounts where `requiresOpenaiAuth` is true, five-hour selection, and thread statuses. `StreamReader.ReadLineAsync()` handles stdout fragmentation, so no duplicate line buffer is added:
 
 ```csharp
-var lines = new JsonLineBuffer();
-AssertEqual(0, lines.Append("{\"id\":1").Count, "partial line waits");
-AssertEqual(1, lines.Append("}\n").Count, "newline completes line");
-
 var tasks = AppServerResponseParser.ParseTasks(
     "{\"result\":{\"data\":[" +
     "{\"id\":\"a\",\"name\":\"Fix build\",\"updatedAt\":1780000000," +
@@ -140,13 +136,13 @@ var tasks = AppServerResponseParser.ParseTasks(
 AssertEqual(TaskState.WaitingForApproval, tasks[0].State, "approval maps red");
 ```
 
-- [ ] **Step 2: Run tests and verify RED**
+- [x] **Step 2: Run tests and verify RED**
 
 Run `powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -Test`.
 
-Expected: compilation fails because `JsonLineBuffer` and `AppServerResponseParser` do not exist.
+Expected: compilation fails because `AppServerResponseParser` does not exist.
 
-- [ ] **Step 3: Implement JSONL and protocol code**
+- [x] **Step 3: Implement JSONL and protocol code**
 
 Use `JavaScriptSerializer` and dictionaries; do not add a JSON dependency. `AppServerClient` must:
 
@@ -161,7 +157,7 @@ void Dispose();
 
 Start `codex app-server --listen stdio://`, redirect stdin/stdout/stderr, remove `OPENAI_API_KEY`, `CODEX_API_KEY`, `AWS_SECRET_ACCESS_KEY`, and `AWS_SESSION_TOKEN` from the child environment, send newline-delimited JSON, and route responses by integer `id`. Ignore unknown notifications. `ReadQuotaAsync` calls `account/read` before `account/rateLimits/read`; `ReadTasksAsync` calls `thread/list` with all documented `sourceKinds`, newest-first ordering, and a limit of 100, then returns only active/error summaries without reading turns or items.
 
-- [ ] **Step 4: Run all tests and verify GREEN**
+- [x] **Step 4: Run all tests and verify GREEN**
 
 Run `powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -Test`.
 

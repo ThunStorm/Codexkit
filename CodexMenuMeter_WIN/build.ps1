@@ -16,8 +16,9 @@ New-Item -ItemType Directory -Force -Path $buildDir | Out-Null
 
 if ($Test) {
     $testExe = Join-Path $buildDir 'CodexMenuMeterTests.exe'
-    & $compiler /nologo /target:exe /out:$testExe /main:CodexMenuMeter.Tests `
+    & $compiler /nologo /target:exe /out:$testExe /main:CodexMenuMeter.Tests /reference:System.Web.Extensions.dll `
         (Join-Path $projectRoot 'src\Domain.cs') `
+        (Join-Path $projectRoot 'src\AppServerClient.cs') `
         (Join-Path $projectRoot 'tests\CodexMenuMeterTests.cs')
     if ($LASTEXITCODE -ne 0) { throw 'Test compilation failed.' }
     & $testExe

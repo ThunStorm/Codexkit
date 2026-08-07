@@ -51,6 +51,40 @@ namespace CodexMenuMeter
                 AssertEqual(5, capped.Tasks.Count, "task rows capped");
                 AssertEqual("未命名任务", capped.Tasks[0].Name, "empty name fallback");
 
+                AssertEqual(true, AppServerResponseParser.HasAccount(
+                    "{\"result\":{\"account\":{\"type\":\"chatgpt\"},\"requiresOpenaiAuth\":true}}"),
+                    "signed in account with auth requirement");
+                AssertEqual(false, AppServerResponseParser.HasAccount(
+                    "{\"result\":{\"account\":null,\"requiresOpenaiAuth\":true}}"),
+                    "missing account is signed out");
+
+                QuotaWindow parsedQuota = AppServerResponseParser.ParseQuota(
+                    "{\"result\":{\"rateLimits\":{" +
+                    "\"primary\":{\"usedPercent\":29,\"windowDurationMins\":10080}," +
+                    "\"secondary\":{\"usedPercent\":31,\"windowDurationMins\":300,\"resetsAt\":1786167266}}}}" );
+                AssertEqual(QuotaKind.FiveHour, parsedQuota.Kind, "parsed five hour wins");
+                AssertEqual(69, parsedQuota.RemainingPercent, "parsed remaining percent");
+                AssertEqual(1786167266D, parsedQuota.ResetsAt.Value.Subtract(new DateTime(1970, 1, 1)).TotalSeconds,
+                    "numeric reset time");
+
+                TaskSummary[] parsedTasks = AppServerResponseParser.ParseTasks(
+                    "{\"result\":{\"data\":[" +
+                    "{\"id\":\"a\",\"name\":\"Fix build\",\"updatedAt\":1780000000," +
+                    "\"status\":{\"type\":\"active\",\"activeFlags\":[\"waitingOnApproval\"]}}," +
+                    "{\"id\":\"b\",\"name\":null,\"updatedAt\":1780000001," +
+                    "\"status\":{\"type\":\"active\",\"activeFlags\":[]}}," +
+                    "{\"id\":\"c\",\"updatedAt\":1780000002," +
+                    "\"status\":{\"type\":\"idle\"}}]}}");
+                AssertEqual(3, parsedTasks.Length, "thread list parsed");
+                AssertEqual(TaskState.WaitingForApproval, parsedTasks[0].State, "approval maps red");
+                AssertEqual(TaskState.Active, parsedTasks[1].State, "active maps yellow");
+                AssertEqual("未命名任务", parsedTasks[1].Name, "missing official name fallback");
+                AssertEqual(TaskState.Idle, parsedTasks[2].State, "idle stays idle");
+
+                AssertEqual(0, AppServerResponseParser.ParseTasks(
+                    "{\"method\":\"unknown/notification\",\"params\":{}}").Length,
+                    "unknown notification ignored");
+
                 Console.WriteLine("PASS " + passed + " tests");
                 return 0;
             }
