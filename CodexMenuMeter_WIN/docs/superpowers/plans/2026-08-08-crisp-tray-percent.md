@@ -92,17 +92,17 @@ git commit -m "feat: add crisp tray percent layout"
 - Consumes: `TrayLayout` and `TrayDpi.ClosestSupportedSize`.
 - Produces: `TrayIconRenderer.Render(string, bool)` using one DPI-matched crisp HICON.
 
-- [ ] **Step 1: Replace vector outlines**
+- [x] **Step 1: Replace vector outlines**
 
 Delete `GraphicsPath.AddString`, `Matrix`, and outline drawing. Render each label with `TextRenderer.MeasureText` and `TextRenderer.DrawText`, `TextFormatFlags.NoPadding | SingleLine | HorizontalCenter | VerticalCenter | NoPrefix`, decreasing a bold `Arial Narrow` pixel font until it fits its rectangle.
 
 Draw the number in `NumberBounds`. When text is not `--`, draw `%` in `PercentBounds`; if no font fits the 16px percent rectangle, draw an integer-aligned percent mark with two filled dots and a one-pixel diagonal.
 
-- [ ] **Step 2: Select the DPI frame**
+- [x] **Step 2: Select the DPI frame**
 
 Keep `GetDpiForWindow(Shell_TrayWnd)` and `GetSystemMetricsForDpi`, then normalize the requested size through `ClosestSupportedSize`. Render directly at that selected size and create the HICON without a second resize.
 
-- [ ] **Step 3: Verify tests and visual probe**
+- [x] **Step 3: Verify tests and visual probe**
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -Clean
@@ -112,15 +112,15 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1
 
 Generate 16, 20, 24, 32, 40, 48, and 64 pixel probe images with the production renderer. At 16px, require readable `39`, recognizable lower-right `%`, no gray outline, and no overlap. Check the optional gray dot separately.
 
-- [ ] **Step 4: Update documentation**
+- [x] **Step 4: Update documentation**
 
 Document the restored lower-right `%`, active DPI-frame selection, hinted text, and removal of vector outlines. Correct the design spec statement so the application, not Shell, selects the frame passed through `NotifyIcon`.
 
-- [ ] **Step 5: Copy and verify final binary**
+- [x] **Step 5: Copy and verify final binary**
 
 Stop only the running `dist\CodexMenuMeter.exe`, wait for exit, copy the verified build, relaunch it, and require build/dist SHA-256 equality. Run `git diff --check`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```powershell
 git add -- CodexMenuMeter_WIN

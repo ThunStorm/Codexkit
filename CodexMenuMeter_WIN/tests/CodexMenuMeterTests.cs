@@ -122,6 +122,21 @@ namespace CodexMenuMeter
                 AssertFalse(dotted.DotBounds.IntersectsWith(dotted.PercentBounds), "dot and percent do not overlap");
                 AssertFalse(dotted.NumberBounds.IntersectsWith(dotted.PercentBounds), "number and percent do not overlap");
 
+                using (System.Drawing.Icon rendered = TrayIconRenderer.Render("39", false))
+                using (Bitmap renderedBitmap = rendered.ToBitmap())
+                {
+                    TrayLayout renderedLayout = TrayLayout.Calculate(renderedBitmap.Width, false);
+                    AssertTrue(HasVisiblePixel(renderedBitmap, renderedLayout.NumberBounds), "number draws visible pixels");
+                    Rectangle percentInterior = new Rectangle(renderedLayout.PercentBounds.X + 1,
+                        renderedLayout.PercentBounds.Y + 1,
+                        renderedLayout.PercentBounds.Width - 2,
+                        renderedLayout.PercentBounds.Height - 2);
+                    AssertTrue(HasVisiblePixel(renderedBitmap, percentInterior), "percent draws visible interior pixels");
+                }
+                foreach (int iconSize in TrayDpi.SupportedSizes)
+                    using (System.Drawing.Icon rendered = TrayIconRenderer.Render("39", false, iconSize))
+                        AssertEqual(iconSize, rendered.Width, iconSize + "px renderer frame");
+
                 TaskTracker timedTracker = new TaskTracker();
                 TaskAggregate timedFirst = timedTracker.Update(new[] {
                     new TaskSummary("timed", "Timed", TaskState.Active, null, DateTime.UtcNow)
@@ -221,6 +236,14 @@ namespace CodexMenuMeter
         {
             return inner.Left >= outer.Left && inner.Top >= outer.Top
                 && inner.Right <= outer.Right && inner.Bottom <= outer.Bottom;
+        }
+
+        private static bool HasVisiblePixel(Bitmap bitmap, Rectangle bounds)
+        {
+            for (int y = bounds.Top; y < bounds.Bottom; y++)
+                for (int x = bounds.Left; x < bounds.Right; x++)
+                    if (bitmap.GetPixel(x, y).A != 0) return true;
+            return false;
         }
 
         private static string Format(object value)

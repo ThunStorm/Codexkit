@@ -2,7 +2,6 @@ using System;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
-using System.Drawing.Drawing2D;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -38,11 +37,12 @@ namespace CodexMenuMeter
         {
             int percent = Math.Max(6, size * 3 / 8);
             Rectangle percentBounds = new Rectangle(size - percent, size - percent, percent, percent);
-            int topHeight = size - percent;
             int dot = showDot ? Math.Max(4, size * 7 / 24) : 0;
             Rectangle dotBounds = showDot ? new Rectangle(0, 0, dot, dot) : Rectangle.Empty;
             int numberLeft = showDot ? dot + 1 : 0;
-            Rectangle numberBounds = new Rectangle(numberLeft, 0, size - numberLeft, topHeight);
+            Rectangle numberBounds = showDot
+                ? new Rectangle(numberLeft, 0, size - numberLeft, size - percent)
+                : new Rectangle(0, 0, size - percent, size);
             return new TrayLayout(dotBounds, numberBounds, percentBounds);
         }
     }
@@ -229,18 +229,22 @@ namespace CodexMenuMeter
 
         public static Icon Render(string text, bool showDot)
         {
-            int size = TrayDpi.IconSize();
+            return Render(text, showDot, TrayDpi.IconSize());
+        }
+
+        internal static Icon Render(string text, bool showDot, int size)
+        {
             TrayLayout layout = TrayLayout.Calculate(size, showDot);
             using (Bitmap bitmap = new Bitmap(size, size))
             using (Graphics graphics = Graphics.FromImage(bitmap))
             {
-                graphics.SmoothingMode = SmoothingMode.AntiAlias;
-                graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
                 graphics.Clear(Color.Transparent);
+                Color foreground = Foreground();
                 if (showDot)
                     using (Brush dot = new SolidBrush(Color.FromArgb(128, 128, 128)))
                         graphics.FillEllipse(dot, layout.DotBounds);
-                DrawNumber(graphics, text, layout.NumberBounds, size);
+                DrawFittedText(graphics, text, layout.NumberBounds, foreground);
+                if (text != "--") DrawPercent(graphics, layout.PercentBounds, foreground);
 
                 IntPtr handle = bitmap.GetHicon();
                 try
@@ -251,7 +255,37 @@ namespace CodexMenuMeter
             }
         }
 
-        private static void DrawNumber(Graphics graphics, string text, Rectangle bounds, int iconSize)
+        private static void DrawFittedText(Graphics graphics, string text, Rectangle bounds, Color foreground)
+        {
+            TextFormatFlags flags = TextFormatFlags.NoPadding | TextFormatFlags.SingleLine
+                | TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.NoPrefix;
+            for (int pixels = bounds.Height * 2; pixels >= 4; pixels--)
+            {
+                using (Font font = new Font("Arial Narrow", pixels, FontStyle.Bold, GraphicsUnit.Pixel))
+                {
+                    Size measured = TextRenderer.MeasureText(graphics, text, font,
+                        new Size(int.MaxValue, int.MaxValue), flags);
+                    if (measured.Width > bounds.Width || measured.Height > bounds.Height) continue;
+                    TextRenderer.DrawText(graphics, text, font, bounds, foreground, Color.Transparent, flags);
+                    return;
+                }
+            }
+        }
+
+        private static void DrawPercent(Graphics graphics, Rectangle bounds, Color foreground)
+        {
+            int dot = Math.Max(2, bounds.Width / 4);
+            using (Brush brush = new SolidBrush(foreground))
+            {
+                graphics.FillRectangle(brush, bounds.Left, bounds.Top, dot, dot);
+                graphics.FillRectangle(brush, bounds.Right - dot, bounds.Bottom - dot, dot, dot);
+                for (int offset = 0; offset < bounds.Width; offset++)
+                    graphics.FillRectangle(brush, bounds.Right - 1 - offset,
+                        bounds.Top + offset * bounds.Height / bounds.Width, 1, 1);
+            }
+        }
+
+        private static Color Foreground()
         {
             bool light = false;
             try
@@ -261,27 +295,7 @@ namespace CodexMenuMeter
                     light = key != null && Convert.ToInt32(key.GetValue("SystemUsesLightTheme", 0)) != 0;
             }
             catch { }
-
-            using (GraphicsPath path = new GraphicsPath())
-            using (FontFamily family = new FontFamily("Arial Narrow"))
-            {
-                path.AddString(text, family, (int)FontStyle.Bold, 100f, Point.Empty,
-                    StringFormat.GenericTypographic);
-                RectangleF source = path.GetBounds();
-                float scale = Math.Min(bounds.Width / source.Width, bounds.Height / source.Height);
-                float x = bounds.X + (bounds.Width - source.Width * scale) / 2f - source.X * scale;
-                float y = bounds.Y + (bounds.Height - source.Height * scale) / 2f - source.Y * scale;
-                using (Matrix transform = new Matrix(scale, 0, 0, scale, x, y)) path.Transform(transform);
-                Color foreground = light ? Color.FromArgb(24, 24, 24) : Color.White;
-                Color outline = light ? Color.White : Color.FromArgb(24, 24, 24);
-                using (Pen pen = new Pen(outline, Math.Max(1f, iconSize / 24f)))
-                using (Brush brush = new SolidBrush(foreground))
-                {
-                    pen.LineJoin = LineJoin.Round;
-                    graphics.DrawPath(pen, path);
-                    graphics.FillPath(brush, path);
-                }
-            }
+            return light ? Color.FromArgb(24, 24, 24) : Color.White;
         }
     }
 

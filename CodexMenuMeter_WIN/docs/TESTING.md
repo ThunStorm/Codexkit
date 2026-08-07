@@ -9,7 +9,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -Live
 powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1
 ```
 
-`-Test` 覆盖百分比计算、无 `%` 显示格式、窗口选择、JSON 响应解析、状态点默认值、原生尺寸布局边界、颜色优先级、任务行上限、官方桌面进程识别和 CLI 路径选择。
+`-Test` 覆盖百分比计算、额度文字、窗口选择、JSON 响应解析、状态点默认值、七档原生尺寸选择、数字/`%` 布局与实际像素输出、颜色优先级、任务行上限、官方桌面进程识别和 CLI 路径选择。
 
 `-Live` 不注入 fixture：它发现本机官方桌面应用和 CLI，启动真实 App Server，读取真实额度并输出窗口分钟数。未登录、接口错误或无额度都会失败，不能作为成功验收。任务数量只记录独立 App Server 的真实返回；它不等同于桌面任务。
 
@@ -17,8 +17,8 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1
 
 ## 2026-08-08 本机结果
 
-- `-Test`：`PASS 42 tests`。
+- `-Test`：`PASS 60 tests`。
 - `-Live`：失败，真实响应为 `Codex 尚未登录`。该结果证明没有用 fixture 冒充额度；完成 `codex login` 后需再次运行，只有输出 `LIVE quota: <数字>% remaining` 才算真实额度验收通过。
 - 活动桌面任务存在时，独立 App Server 返回 0 个桌面任务，因此任务状态功能未启用。
-- Windows UI：检查数字不带 `%` 且无裁切；开启预留点后只增加灰点；右键菜单没有任务状态行；菜单和设置字体在当前 DPI 下边缘清晰。
-- Per-Monitor V2 视觉探针：使用生产图标渲染器、系统菜单字体和正式 manifest 生成原生像素截图；`39`、灰点、菜单及设置窗口均无裁切，菜单不含任务状态行。当前自动化会话无法连接用户 Explorer 的托盘窗口，因此最终任务栏位置仍以用户桌面目视为准。
+- Windows UI：检查左侧大数字和右下 `%` 均无裁切；开启预留点后只增加灰点；右键菜单没有任务状态行；菜单和设置字体在当前 DPI 下边缘清晰。
+- Per-Monitor V2 视觉探针：使用生产图标渲染器和正式 manifest 生成 16/20/24/32/40/48/64px 放大像素图；`39`、右下 `%` 和灰点均使用原生整数像素且无描边。当前自动化会话无法连接用户 Explorer 的托盘窗口，因此最终任务栏位置仍以用户桌面目视为准。
