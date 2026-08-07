@@ -29,7 +29,7 @@
 - Produces: `TrayText.Format(int?)`, `MeterSettings.ParseShowTaskStatusDot(object)`, and `TrayLayout.Calculate(int, bool)`.
 - Consumes: existing `Rectangle` and registry settings key.
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 Add assertions:
 
@@ -50,7 +50,7 @@ AssertFalse(dotted.DotBounds.IntersectsWith(dotted.NumberBounds), "dot and numbe
 
 Add a local `Contains(Rectangle outer, Rectangle inner)` test helper.
 
-- [ ] **Step 2: Run tests and verify RED**
+- [x] **Step 2: Run tests and verify RED**
 
 Run:
 
@@ -60,7 +60,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1 -Test
 
 Expected: failures for old `39%`/`--%` output and missing `MeterSettings`/`TrayLayout`.
 
-- [ ] **Step 3: Implement minimal pure behavior**
+- [x] **Step 3: Implement minimal pure behavior**
 
 Change `TrayText.Format` to return the number without `%`. Add:
 
@@ -96,11 +96,11 @@ internal static class MeterSettings
 }
 ```
 
-- [ ] **Step 4: Run tests and verify GREEN**
+- [x] **Step 4: Run tests and verify GREEN**
 
 Run the same `-Test` command. Expected: all assertions pass.
 
-- [ ] **Step 5: Commit Task 1**
+- [x] **Step 5: Commit Task 1**
 
 ```powershell
 git add -- CodexMenuMeter_WIN/src/TrayApplicationContext.cs CodexMenuMeter_WIN/tests/CodexMenuMeterTests.cs

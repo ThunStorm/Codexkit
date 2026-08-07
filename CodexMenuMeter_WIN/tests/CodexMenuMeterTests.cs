@@ -1,4 +1,5 @@
 using System;
+using System.Drawing;
 using System.IO;
 using System.Collections.Generic;
 
@@ -96,8 +97,18 @@ namespace CodexMenuMeter
                     "CLI is excluded");
                 AssertFalse(CodexProcessMonitor.IsOfficial("ChatGPT", @"C:\Tools\ChatGPT.exe"),
                     "unrelated ChatGPT process excluded");
-                AssertEqual("69%", TrayText.Format(69), "visible percent");
-                AssertEqual("--%", TrayText.Format(null), "unknown percent");
+                AssertEqual("69", TrayText.Format(69), "quota omits percent sign");
+                AssertEqual("--", TrayText.Format(null), "unknown quota omits percent sign");
+                AssertFalse(MeterSettings.ParseShowTaskStatusDot(null), "status dot defaults off");
+                AssertTrue(MeterSettings.ParseShowTaskStatusDot(1), "status dot persisted on");
+
+                TrayLayout plain = TrayLayout.Calculate(24, false);
+                AssertEqual(Rectangle.Empty, plain.DotBounds, "hidden dot has no bounds");
+                AssertTrue(Contains(new Rectangle(0, 0, 24, 24), plain.NumberBounds), "plain number fits icon");
+                TrayLayout dotted = TrayLayout.Calculate(24, true);
+                AssertTrue(dotted.DotBounds.Width > 0, "shown dot reserves pixels");
+                AssertTrue(Contains(new Rectangle(0, 0, 24, 24), dotted.NumberBounds), "dotted number fits icon");
+                AssertFalse(dotted.DotBounds.IntersectsWith(dotted.NumberBounds), "dot and number do not overlap");
 
                 TaskTracker timedTracker = new TaskTracker();
                 TaskAggregate timedFirst = timedTracker.Update(new[] {
@@ -192,6 +203,12 @@ namespace CodexMenuMeter
         private static void AssertFalse(bool actual, string name)
         {
             AssertEqual(false, actual, name);
+        }
+
+        private static bool Contains(Rectangle outer, Rectangle inner)
+        {
+            return inner.Left >= outer.Left && inner.Top >= outer.Top
+                && inner.Right <= outer.Right && inner.Bottom <= outer.Bottom;
         }
 
         private static string Format(object value)

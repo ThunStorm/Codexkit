@@ -18,7 +18,38 @@ namespace CodexMenuMeter
     {
         public static string Format(int? remaining)
         {
-            return remaining.HasValue ? remaining.Value + "%" : "--%";
+            return remaining.HasValue ? remaining.Value.ToString() : "--";
+        }
+    }
+
+    internal sealed class TrayLayout
+    {
+        public readonly Rectangle DotBounds;
+        public readonly Rectangle NumberBounds;
+
+        private TrayLayout(Rectangle dotBounds, Rectangle numberBounds)
+        {
+            DotBounds = dotBounds;
+            NumberBounds = numberBounds;
+        }
+
+        public static TrayLayout Calculate(int size, bool showDot)
+        {
+            int edge = Math.Max(1, size / 16);
+            if (!showDot)
+                return new TrayLayout(Rectangle.Empty,
+                    new Rectangle(edge, edge, size - edge * 2, size - edge * 2));
+            int dot = Math.Max(4, size * 7 / 24);
+            return new TrayLayout(new Rectangle(edge, edge, dot, dot),
+                new Rectangle(dot + edge * 2, edge, size - dot - edge * 3, size - edge * 2));
+        }
+    }
+
+    internal static class MeterSettings
+    {
+        public static bool ParseShowTaskStatusDot(object value)
+        {
+            return value is int && (int)value != 0;
         }
     }
 
