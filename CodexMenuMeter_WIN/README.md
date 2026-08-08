@@ -23,7 +23,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1
 ## 当前限制
 
 - 当前桌面 Codex 的 App Server 使用私有父子进程 stdio；独立 App Server 的 `thread/list` 看不到桌面任务。菜单不显示任务状态；可选状态点默认关闭，开启后也只显示灰色预留点。
-- 程序使用 Per-Monitor V2，从 16/20/24/32/40/48/64px 中选择最接近任务栏 DPI 的原生帧；数字使用 GDI+ 单色网格提示的粗体窄字形，不绘制 `%`、ClearType 彩边或模糊描边。
+- 程序使用 Per-Monitor V2，从 16/20/24/32/40/48/64px 中选择最接近任务栏 DPI 的原生帧；数字使用 GDI+ 单色网格提示的 Segoe UI Bold，并以约 1.25 倍纵向比例增强可读性，不绘制 `%`、ClearType 彩边或模糊描边。
 - `dist\CodexMenuMeter.exe` 未签名，首次运行可能出现 SmartScreen 提示。
 - 卸载：在托盘菜单退出，关闭“随 Windows 登录启动”，再删除本目录。启动项位于 `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`。
 

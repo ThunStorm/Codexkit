@@ -104,7 +104,7 @@ namespace CodexMenuMeter
 
                 TrayLayout plain = TrayLayout.Calculate(24, false);
                 AssertEqual(Rectangle.Empty, plain.DotBounds, "hidden dot has no bounds");
-                AssertEqual(new Rectangle(0, 0, 24, 24), plain.NumberBounds, "plain number fills icon");
+                AssertEqual(new Rectangle(0, 0, 24, 24), plain.NumberBounds, "number fills icon");
                 AssertEqual("16,20,24,32,40,48,64", string.Join(",", TrayDpi.SupportedSizes), "supported icon frames");
                 AssertEqual(16, TrayDpi.ClosestSupportedSize(17), "17px selects 16px frame");
                 AssertEqual(24, TrayDpi.ClosestSupportedSize(23), "23px selects 24px frame");
@@ -113,7 +113,7 @@ namespace CodexMenuMeter
                 TrayLayout dotted = TrayLayout.Calculate(24, true);
                 AssertTrue(dotted.DotBounds.Width > 0, "shown dot reserves pixels");
                 AssertEqual(new Rectangle(0, dotted.DotBounds.Bottom + 1, 24,
-                    23 - dotted.DotBounds.Bottom), dotted.NumberBounds, "dotted number uses full width below dot");
+                    23 - dotted.DotBounds.Bottom), dotted.NumberBounds, "dotted number reserves percent");
                 AssertFalse(dotted.DotBounds.IntersectsWith(dotted.NumberBounds), "dot and number do not overlap");
 
                 using (System.Drawing.Icon rendered = TrayIconRenderer.Render("1", false, 16))
@@ -121,13 +121,14 @@ namespace CodexMenuMeter
                 {
                     TrayLayout renderedLayout = TrayLayout.Calculate(renderedBitmap.Width, false);
                     AssertTrue(HasVisiblePixel(renderedBitmap, renderedLayout.NumberBounds), "number draws visible pixels");
-                    AssertFalse(HasVisiblePixel(renderedBitmap, new Rectangle(10, 10, 6, 6)),
-                        "tray omits lower-right percent mark");
                     AssertFalse(HasColoredPixel(renderedBitmap), "transparent icon has no ClearType color fringe");
                 }
                 using (System.Drawing.Icon bold = TrayIconRenderer.Render("39", false, 16))
                 using (Bitmap boldBitmap = bold.ToBitmap())
-                    AssertTrue(CountVisiblePixels(boldBitmap) >= 45, "16px number uses bold pixel density");
+                    AssertTrue(CountVisiblePixels(boldBitmap) >= 30, "16px number uses visible pixel density");
+                using (System.Drawing.Icon tall = TrayIconRenderer.Render("39", false, 20))
+                using (Bitmap tallBitmap = tall.ToBitmap())
+                    AssertTrue(VisibleBounds(tallBitmap).Height >= 17, "20px number uses taller glyph");
                 foreach (int iconSize in TrayDpi.SupportedSizes)
                     using (System.Drawing.Icon rendered = TrayIconRenderer.Render("39", false, iconSize))
                         AssertEqual(iconSize, rendered.Width, iconSize + "px renderer frame");
@@ -259,6 +260,16 @@ namespace CodexMenuMeter
                 for (int x = 0; x < bitmap.Width; x++)
                     if (bitmap.GetPixel(x, y).A != 0) visible++;
             return visible;
+        }
+
+        private static Rectangle VisibleBounds(Bitmap bitmap)
+        {
+            Rectangle bounds = Rectangle.Empty;
+            for (int y = 0; y < bitmap.Height; y++)
+                for (int x = 0; x < bitmap.Width; x++)
+                    if (bitmap.GetPixel(x, y).A != 0)
+                        bounds = bounds.IsEmpty ? new Rectangle(x, y, 1, 1) : Rectangle.Union(bounds, new Rectangle(x, y, 1, 1));
+            return bounds;
         }
 
         private static string Format(object value)

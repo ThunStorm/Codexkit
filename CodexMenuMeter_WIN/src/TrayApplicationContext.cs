@@ -261,11 +261,18 @@ namespace CodexMenuMeter
                 format.FormatFlags |= StringFormatFlags.NoWrap;
                 for (int pixels = bounds.Height * 2; pixels >= 4; pixels--)
                 {
-                    using (Font font = new Font("Arial Narrow", pixels, FontStyle.Bold, GraphicsUnit.Pixel))
+                    using (Font font = new Font("Segoe UI", pixels, FontStyle.Bold, GraphicsUnit.Pixel))
                     {
                         SizeF measured = graphics.MeasureString(text, font, PointF.Empty, format);
-                        if (measured.Width > bounds.Width || measured.Height > bounds.Height) continue;
+                        if (measured.Width * 0.84f > bounds.Width) continue;
+                        System.Drawing.Drawing2D.GraphicsState state = graphics.Save();
+                        graphics.TranslateTransform(bounds.Left + bounds.Width / 2f,
+                            bounds.Top + bounds.Height / 2f);
+                        graphics.ScaleTransform(0.84f, 1.25f);
+                        graphics.TranslateTransform(-(bounds.Left + bounds.Width / 2f),
+                            -(bounds.Top + bounds.Height / 2f));
                         graphics.DrawString(text, font, brush, bounds, format);
+                        graphics.Restore(state);
                         return;
                     }
                 }

@@ -20,5 +20,5 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1
 - `-Test`：`PASS 56 tests`。
 - `-Live`：失败，真实响应为 `Codex 尚未登录`。该结果证明没有用 fixture 冒充额度；完成 `codex login` 后需再次运行，只有输出 `LIVE quota: <数字>% remaining` 才算真实额度验收通过。
 - 活动桌面任务存在时，独立 App Server 返回 0 个桌面任务，因此任务状态功能未启用。
-- Windows UI：检查粗体大数字无 `%` 且无裁切；开启预留点后只增加灰点；右键菜单没有任务状态行；菜单和设置字体在当前 DPI 下边缘清晰。
+- Windows UI：检查纵向增强的 Segoe UI Bold 大数字无 `%` 且无裁切；开启预留点后只增加灰点；右键菜单没有任务状态行；菜单和设置字体在当前 DPI 下边缘清晰。
 - Per-Monitor V2 视觉探针：生产渲染器的 16px `39` 使用 55 个可见单色像素，较 Regular 的 33 个更粗；无 ClearType 彩边或描边。当前自动化会话无法连接用户 Explorer 的托盘窗口，因此最终任务栏位置仍以用户桌面目视为准。
