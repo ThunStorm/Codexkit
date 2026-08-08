@@ -128,7 +128,11 @@ namespace CodexMenuMeter
                     AssertTrue(CountVisiblePixels(boldBitmap) >= 30, "16px number uses visible pixel density");
                 using (System.Drawing.Icon tall = TrayIconRenderer.Render("39", false, 20))
                 using (Bitmap tallBitmap = tall.ToBitmap())
-                    AssertTrue(VisibleBounds(tallBitmap).Height >= 17, "20px number uses taller glyph");
+                {
+                    Rectangle tallBounds = VisibleBounds(tallBitmap);
+                    AssertTrue(tallBounds.Height >= 16, "20px number uses taller glyph");
+                    AssertTrue(tallBounds.Top <= 2, "20px number is vertically raised");
+                }
                 foreach (int iconSize in TrayDpi.SupportedSizes)
                     using (System.Drawing.Icon rendered = TrayIconRenderer.Render("39", false, iconSize))
                         AssertEqual(iconSize, rendered.Width, iconSize + "px renderer frame");

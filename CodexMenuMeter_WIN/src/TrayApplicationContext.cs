@@ -265,13 +265,15 @@ namespace CodexMenuMeter
                     {
                         SizeF measured = graphics.MeasureString(text, font, PointF.Empty, format);
                         if (measured.Width * 0.84f > bounds.Width) continue;
+                        Rectangle raisedBounds = new Rectangle(bounds.Left, bounds.Top - 2,
+                            bounds.Width, bounds.Height);
+                        float centerX = raisedBounds.Left + raisedBounds.Width / 2f;
+                        float centerY = raisedBounds.Top + raisedBounds.Height / 2f;
                         System.Drawing.Drawing2D.GraphicsState state = graphics.Save();
-                        graphics.TranslateTransform(bounds.Left + bounds.Width / 2f,
-                            bounds.Top + bounds.Height / 2f);
-                        graphics.ScaleTransform(0.84f, 1.25f);
-                        graphics.TranslateTransform(-(bounds.Left + bounds.Width / 2f),
-                            -(bounds.Top + bounds.Height / 2f));
-                        graphics.DrawString(text, font, brush, bounds, format);
+                        graphics.TranslateTransform(centerX, centerY);
+                        graphics.ScaleTransform(0.82f, 1.30f);
+                        graphics.TranslateTransform(-centerX, -centerY);
+                        graphics.DrawString(text, font, brush, raisedBounds, format);
                         graphics.Restore(state);
                         return;
                     }
