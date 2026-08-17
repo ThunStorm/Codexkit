@@ -17,11 +17,11 @@ final class SettingsController: NSObject {
         let taskStatusDot = NSButton(checkboxWithTitle: "显示任务状态点（预留功能）", target: nil, action: nil)
         taskStatusDot.identifier = NSUserInterfaceItemIdentifier("taskStatusDot")
         taskStatusDot.state = UserDefaults.standard.bool(forKey: "showTaskStatusDot") ? .on : .off
-        let login = NSButton(checkboxWithTitle: "随 Codex / ChatGPT 启动", target: self, action: #selector(toggleLaunchAtLogin(_:)))
+        let login = NSButton(checkboxWithTitle: "登录时启动，并跟随 Codex / ChatGPT", target: self, action: #selector(toggleLaunchAtLogin(_:)))
         login.state = SMAppService.mainApp.status == .enabled ? .on : .off
         let save = NSButton(title: "保存", target: self, action: #selector(save(_:)))
         save.identifier = NSUserInterfaceItemIdentifier("save")
-        let help = NSTextField(wrappingLabelWithString: "任务状态数据源尚未实现。开启状态点仅为未来兼容预留，目前显示灰色，且不会在菜单中列出任务。")
+        let help = NSTextField(wrappingLabelWithString: "登录时启动由 macOS 登录项管理；应用只在 Codex / ChatGPT 运行时显示并读取额度，Codex 退出后自动停止。任务状态数据源尚未实现。")
         help.textColor = .secondaryLabelColor
         let stack = NSStackView(views: [NSTextField(labelWithString: "Codex CLI 路径"), path, label, taskStatusDot, login, help, save])
         stack.orientation = .vertical; stack.alignment = .leading; stack.spacing = 12
