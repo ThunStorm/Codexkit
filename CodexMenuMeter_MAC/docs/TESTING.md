@@ -3,11 +3,11 @@
 ## 自动测试
 
 ```sh
-cd menu_meter/CodexMenuMeter
+cd CodexMenuMeter_MAC
 swift test
 ```
 
-测试覆盖窗口选择、剩余百分比、Unix 重置时间、稀疏更新合并、已登录账户识别和任务领域模型聚合。
+测试覆盖状态栏与菜单窗口选择、缺失窗口隐藏、剩余百分比、Unix 重置时间、稀疏更新合并、已登录账户识别和任务领域模型聚合。
 
 某些只安装了 Command Line Tools 的机器可能出现 Swift 编译器与 SDK 不匹配，或缺少 XCTest。可显式使用兼容 SDK：
 
@@ -26,6 +26,7 @@ swift build -c release --jobs 1
 - `account/rateLimits/read` 返回至少一个有效窗口；
 - 选择器按时长而非 primary/secondary 位置选中窗口；
 - 菜单栏值等于 `round(100 - usedPercent)`。
+- 5 小时窗口存在时，菜单同时显示 5 小时和周额度；服务端缺失的窗口不生成占位行。
 
 探测仅可使用官方 `codex app-server --stdio`，并应在完成后终止自己启动的进程。
 
@@ -34,6 +35,7 @@ swift build -c release --jobs 1
 - 默认状态项只显示百分比；
 - 打开“显示任务状态点”后显示灰点，关闭后没有多余间距；
 - 菜单不出现运行任务、状态、标题或审批信息；
+- 有 5 小时和周窗口时菜单按该顺序显示两组额度与重置时间，缺失窗口时对应组隐藏；
 - 额度周期标签开关即时生效；
 - 未登录、CLI 不存在、超时及过期时显示 `--%`；
 - 浅色/深色、高对比度和 VoiceOver 下可读；

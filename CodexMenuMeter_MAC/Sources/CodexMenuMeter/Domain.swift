@@ -30,6 +30,13 @@ enum UsageSelector {
     static func selectDisplayedWindow(_ windows: [UsageWindow]) -> UsageWindow? {
         windows.first { $0.kind == .fiveHour } ?? windows.first { $0.kind == .weekly }
     }
+
+    static func selectMenuWindows(_ windows: [UsageWindow]) -> [UsageWindow] {
+        guard let fiveHour = windows.first(where: { $0.kind == .fiveHour }) else {
+            return windows.first(where: { $0.kind == .weekly }).map { [$0] } ?? []
+        }
+        return [fiveHour] + (windows.first(where: { $0.kind == .weekly }).map { [$0] } ?? [])
+    }
 }
 
 enum AttentionReason: Sendable, Equatable {

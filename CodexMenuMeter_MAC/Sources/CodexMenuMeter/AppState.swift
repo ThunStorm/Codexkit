@@ -4,6 +4,7 @@ import Foundation
 @MainActor
 final class AppState: ObservableObject {
     @Published private(set) var usage: UsageDisplayState = .loading
+    @Published private(set) var quotaWindows: [UsageWindow] = []
     @Published private(set) var activity: AgentActivityState = .unknown
     @Published private(set) var runningTasks: [RunningTaskSummary] = []
     @Published private(set) var connection: ConnectionState = .disconnected
@@ -23,6 +24,7 @@ final class AppState: ObservableObject {
     }
 
     var displayedWindow: UsageWindow? { if case .available(let window) = usage { return window }; return nil }
+    var menuWindows: [UsageWindow] { UsageSelector.selectMenuWindows(quotaWindows) }
     var showsTaskStatusDot: Bool { UserDefaults.standard.bool(forKey: "showTaskStatusDot") }
 
     var display: MenuBarDisplayState {
@@ -47,6 +49,7 @@ final class AppState: ObservableObject {
             guard let executable = self.locator.locate() else {
                 self.connection = .failed("未找到 Codex CLI")
                 self.usage = .unavailable(reason: "未找到 Codex CLI")
+                self.quotaWindows = []
                 return
             }
             let client: JSONRPCClient
@@ -59,6 +62,7 @@ final class AppState: ObservableObject {
                 guard account.account != nil else { throw JSONRPCError.protocolError("Codex 尚未登录") }
                 let response: RateLimitsReadResponse = try await client.requestWithoutParams(method: "account/rateLimits/read")
                 let windows = response.allWindows()
+                self.quotaWindows = windows
                 guard let selected = UsageSelector.selectDisplayedWindow(windows) else {
                     self.usage = .unavailable(reason: "没有可显示的 5 小时或一周额度窗口")
                     self.connection = .connected
@@ -71,12 +75,13 @@ final class AppState: ObservableObject {
             } catch {
                 self.connection = .failed(error.localizedDescription)
                 self.usage = .unavailable(reason: error.localizedDescription)
+                self.quotaWindows = []
             }
         }
     }
 
     func markStaleIfNeeded(now: Date = .now) {
-        if let lastUpdatedAt, now.timeIntervalSince(lastUpdatedAt) > 300 { usage = .stale; activity = .unknown; runningTasks = [] }
+        if let lastUpdatedAt, now.timeIntervalSince(lastUpdatedAt) > 300 { usage = .stale; quotaWindows = []; activity = .unknown; runningTasks = [] }
     }
 
     func setMockTasks(_ tasks: [RunningTaskSummary], latestCompletion: Date? = nil) {

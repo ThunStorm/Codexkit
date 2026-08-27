@@ -9,6 +9,9 @@ final class DomainTests: XCTestCase {
 
     func testFiveHourWindowWinsOverWeekly() { XCTAssertEqual(UsageSelector.selectDisplayedWindow([window(10_080), window(300)])?.durationMinutes, 300) }
     func testWeeklyFallback() { XCTAssertEqual(UsageSelector.selectDisplayedWindow([window(10_080)])?.kind, .weekly) }
+    func testMenuShowsFiveHourAndWeeklyTogether() { XCTAssertEqual(UsageSelector.selectMenuWindows([window(10_080), window(300)]).map(\.kind), [.fiveHour, .weekly]) }
+    func testMenuHidesMissingWeeklyWindow() { XCTAssertEqual(UsageSelector.selectMenuWindows([window(300)]).map(\.kind), [.fiveHour]) }
+    func testMenuKeepsWeeklyFallbackWithoutFiveHourWindow() { XCTAssertEqual(UsageSelector.selectMenuWindows([window(10_080)]).map(\.kind), [.weekly]) }
     func testUnknownWindowsAreNotSelected() { XCTAssertNil(UsageSelector.selectDisplayedWindow([window(60)])) }
     func testRemainingPercentageAndInvalidValues() { XCTAssertEqual(UsageSelector.remainingPercent(usedPercent: 16), 84); XCTAssertEqual(UsageSelector.remainingPercent(usedPercent: 0), 100); XCTAssertEqual(UsageSelector.remainingPercent(usedPercent: 100), 0); XCTAssertNil(UsageSelector.remainingPercent(usedPercent: 101)) }
     func testSparseUpdateKeepsExistingSecondaryWindow() {

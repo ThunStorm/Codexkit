@@ -43,8 +43,12 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         menu.removeAllItems()
         add("Codex 额度", enabled: false)
         menu.addItem(.separator())
-        if let window = state.displayedWindow { add("额度：\(state.display.quotaKindText)剩余 \(window.remainingPercent)%", enabled: false); add("重置：\(formatReset(window.resetsAt))", enabled: false) }
-        else { add("额度：暂不可用", enabled: false) }
+        if state.menuWindows.isEmpty { add("额度：暂不可用", enabled: false) }
+        for window in state.menuWindows {
+            let label = window.kind == .fiveHour ? "5 小时" : "周额度"
+            add("\(label)：剩余 \(window.remainingPercent)%", enabled: false)
+            add("重置：\(formatReset(window.resetsAt))", enabled: false)
+        }
         add("更新：\(formatUpdated(state.lastUpdatedAt))", enabled: false)
         menu.addItem(.separator())
         addAction("打开 Codex", #selector(openCodex))

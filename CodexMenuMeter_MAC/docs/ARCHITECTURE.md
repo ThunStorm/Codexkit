@@ -16,11 +16,13 @@
   → account/rateLimits/read
   → RateLimitsReadResponse
   → UsageSelector
-  → AppState.usage
+  → AppState.usage / quotaWindows
   → StatusItemView / NSMenu
 ```
 
 UI 永不直接调用 RPC。所有不可用、过期和错误状态先归入 `AppState`，再生成 `MenuBarDisplayState`。
+
+状态栏主数字由 `selectDisplayedWindow` 选择，优先 5 小时、缺失时回退周额度。菜单由 `selectMenuWindows` 选择：存在 5 小时窗口时依次展示 5 小时和周额度；任一窗口未返回则隐藏对应行。
 
 ## 生命周期
 
