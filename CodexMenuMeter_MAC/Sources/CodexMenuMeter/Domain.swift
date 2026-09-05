@@ -27,8 +27,14 @@ enum UsageSelector {
         return Int((100 - usedPercent).rounded())
     }
 
+    /// 状态栏主数字：优先 5 小时窗口，缺失时回退周额度窗口。
+    /// 特例：周额度已耗尽（剩余 0%）时，无论 5 小时额度剩余多少，都改显示周额度窗口，
+    /// 让状态栏直接显示 0%，避免给出“还能继续用”的误导。
     static func selectDisplayedWindow(_ windows: [UsageWindow]) -> UsageWindow? {
-        windows.first { $0.kind == .fiveHour } ?? windows.first { $0.kind == .weekly }
+        if let weekly = windows.first(where: { $0.kind == .weekly }), weekly.remainingPercent == 0 {
+            return weekly
+        }
+        return windows.first { $0.kind == .fiveHour } ?? windows.first { $0.kind == .weekly }
     }
 
     static func selectMenuWindows(_ windows: [UsageWindow]) -> [UsageWindow] {

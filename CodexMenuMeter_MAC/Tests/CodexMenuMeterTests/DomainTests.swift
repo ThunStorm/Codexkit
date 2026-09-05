@@ -8,6 +8,21 @@ final class DomainTests: XCTestCase {
     }
 
     func testFiveHourWindowWinsOverWeekly() { XCTAssertEqual(UsageSelector.selectDisplayedWindow([window(10_080), window(300)])?.durationMinutes, 300) }
+    func testExhaustedWeeklyForcesZeroDisplayOverFiveHour() {
+        let selected = UsageSelector.selectDisplayedWindow([window(300, used: 16), window(10_080, used: 100)])
+        XCTAssertEqual(selected?.kind, .weekly)
+        XCTAssertEqual(selected?.remainingPercent, 0)
+    }
+    func testExhaustedWeeklyOnlyWindowDisplaysZero() {
+        let selected = UsageSelector.selectDisplayedWindow([window(10_080, used: 100)])
+        XCTAssertEqual(selected?.kind, .weekly)
+        XCTAssertEqual(selected?.remainingPercent, 0)
+    }
+    func testExhaustedFiveHourWithWeeklyRemainingStillShowsFiveHour() {
+        let selected = UsageSelector.selectDisplayedWindow([window(300, used: 100), window(10_080, used: 40)])
+        XCTAssertEqual(selected?.kind, .fiveHour)
+        XCTAssertEqual(selected?.remainingPercent, 0)
+    }
     func testWeeklyFallback() { XCTAssertEqual(UsageSelector.selectDisplayedWindow([window(10_080)])?.kind, .weekly) }
     func testMenuShowsFiveHourAndWeeklyTogether() { XCTAssertEqual(UsageSelector.selectMenuWindows([window(10_080), window(300)]).map(\.kind), [.fiveHour, .weekly]) }
     func testMenuHidesMissingWeeklyWindow() { XCTAssertEqual(UsageSelector.selectMenuWindows([window(300)]).map(\.kind), [.fiveHour]) }
