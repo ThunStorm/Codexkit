@@ -4,7 +4,7 @@
 
 ## 构建与运行
 
-需要 macOS 14+、Xcode/Swift 6，以及已安装并登录的官方 `codex` CLI。项目会依次发现用户设置的 CLI 路径、`/Applications/ChatGPT.app/Contents/Resources/codex`、Homebrew 和 `/usr/local/bin` 路径。
+需要 macOS 14+、Xcode/Swift 6，以及已安装并登录的官方 `codex` CLI。项目会依次发现用户设置的 CLI 路径、最新版 ChatGPT 内置的 `Contents/Resources/codex-cli/bin/codex`、旧版内置路径、Homebrew 和 `/usr/local/bin` 路径。
 
 ```sh
 cd CodexMenuMeter_MAC

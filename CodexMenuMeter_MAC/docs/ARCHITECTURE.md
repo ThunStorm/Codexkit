@@ -28,6 +28,8 @@ UI 永不直接调用 RPC。所有不可用、过期和错误状态先归入 `Ap
 
 `AppDelegate` 采用 accessory activation policy，因此不显示 Dock 图标。它监测 `com.openai.codex` 的启动；若该应用已运行或随后启动，才创建 `AppState` 与菜单栏状态项。
 
+Codex 更新或重启时可能短暂出现新旧两个同标识进程。收到退出通知后应用延迟一秒重新检查 `NSWorkspace`：仍有 Codex 实例则保持或恢复状态项，确认全部退出才隐藏，避免新进程先启动、旧进程后退出造成状态项永久消失。
+
 启用“随 Codex / ChatGPT 启动”时，`SMAppService.mainApp` 把本应用注册为登录项。登录项负责等待 Codex/ChatGPT；macOS 不提供让 ChatGPT 直接启动第三方应用的公开机制。
 
 ## 任务状态预留

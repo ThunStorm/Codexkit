@@ -29,10 +29,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         codexTerminateObserver = NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didTerminateApplicationNotification, object: nil, queue: .main) { [weak self] notification in
             guard let application = notification.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
                   application.bundleIdentifier == "com.openai.codex" else { return }
-            Task { @MainActor in self?.stopMeter() }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                guard let self else { return }
+                self.isCodexRunning ? self.startMeter() : self.stopMeter()
+            }
         }
-        if NSWorkspace.shared.runningApplications.contains(where: { $0.bundleIdentifier == "com.openai.codex" }) { startMeter() }
+        if isCodexRunning { startMeter() }
     }
+
+    private var isCodexRunning: Bool { NSWorkspace.shared.runningApplications.contains { $0.bundleIdentifier == "com.openai.codex" } }
 
     private func startMeter() {
         guard state == nil else { return }

@@ -41,6 +41,7 @@ swift build -c release --jobs 1
 - 浅色/深色、高对比度和 VoiceOver 下可读；
 - 检查 Finder 图标、无 Dock 图标和设置窗口；
 - 用 Command 拖动状态项到 Codex 图标旁。
+- 更新或快速重启 Codex 后状态项继续显示；Codex 全部退出后状态项隐藏，再启动时恢复。
 
 ## 发布检查
 
