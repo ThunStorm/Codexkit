@@ -9,6 +9,7 @@ actor JSONRPCClient {
     private var process: Process?
     private var input: FileHandle?
     private var continuations: [Int: CheckedContinuation<Data, Error>] = [:]
+    private var timeouts: [Int: Task<Void, Never>] = [:]
     private var nextID = 1
     private var readBuffer = Data()
     private var didInitialize = false
@@ -29,7 +30,7 @@ actor JSONRPCClient {
         process.standardError = Pipe()
         stdout.fileHandleForReading.readabilityHandler = { [weak self] handle in
             let data = handle.availableData
-            guard !data.isEmpty else { return }
+            guard !data.isEmpty else { Task { await self?.close() }; return }
             Task { await self?.receive(data) }
         }
         do { try process.run() } catch { throw JSONRPCError.launchFailed }
@@ -52,12 +53,7 @@ actor JSONRPCClient {
         try connect()
         let id = nextID; nextID += 1
         let payload = try JSONEncoder().encode(JSONRPCRequest(id: id, method: method, params: params))
-        let data = try await withThrowingTaskGroup(of: Data.self) { group in
-            group.addTask { try await self.waitForResponse(id: id, payload: payload) }
-            group.addTask { try await Task.sleep(for: .seconds(timeout)); throw JSONRPCError.timeout }
-            guard let first = try await group.next() else { throw JSONRPCError.timeout }
-            group.cancelAll(); return first
-        }
+        let data = try await waitForResponse(id: id, payload: payload, timeout: timeout)
         let response = try JSONDecoder().decode(ResponseEnvelope<Response>.self, from: data)
         if let error = response.error { throw JSONRPCError.protocolError(error.message) }
         guard let result = response.result else { throw JSONRPCError.protocolError("响应缺少结果") }
@@ -68,26 +64,27 @@ actor JSONRPCClient {
         try connect()
         let id = nextID; nextID += 1
         let payload = try JSONEncoder().encode(JSONRPCRequestWithoutParams(id: id, method: method))
-        let data = try await withThrowingTaskGroup(of: Data.self) { group in
-            group.addTask { try await self.waitForResponse(id: id, payload: payload) }
-            group.addTask { try await Task.sleep(for: .seconds(timeout)); throw JSONRPCError.timeout }
-            guard let first = try await group.next() else { throw JSONRPCError.timeout }
-            group.cancelAll(); return first
-        }
+        let data = try await waitForResponse(id: id, payload: payload, timeout: timeout)
         let response = try JSONDecoder().decode(ResponseEnvelope<Response>.self, from: data)
         if let error = response.error { throw JSONRPCError.protocolError(error.message) }
         guard let result = response.result else { throw JSONRPCError.protocolError("响应缺少结果") }
         return result
     }
 
-    func close() { process?.terminate(); process = nil; input = nil; didInitialize = false; readBuffer = Data(); continuations.values.forEach { $0.resume(throwing: JSONRPCError.launchFailed) }; continuations = [:] }
+    func close() { if process?.isRunning == true { process?.terminate() }; process = nil; input = nil; didInitialize = false; readBuffer = Data(); timeouts.values.forEach { $0.cancel() }; timeouts = [:]; continuations.values.forEach { $0.resume(throwing: JSONRPCError.launchFailed) }; continuations = [:] }
 
-    private func waitForResponse(id: Int, payload: Data) async throws -> Data {
+    private func waitForResponse(id: Int, payload: Data, timeout: TimeInterval) async throws -> Data {
         try await withCheckedThrowingContinuation { continuation in
             continuations[id] = continuation
-            do { try send(payload) } catch { continuations.removeValue(forKey: id); continuation.resume(throwing: error) }
+            timeouts[id] = Task {
+                do { try await Task.sleep(for: .seconds(timeout)) } catch { return }
+                self.expire(id: id)
+            }
+            do { try send(payload) } catch { continuations.removeValue(forKey: id); timeouts.removeValue(forKey: id)?.cancel(); continuation.resume(throwing: error) }
         }
     }
+
+    private func expire(id: Int) { timeouts.removeValue(forKey: id); continuations.removeValue(forKey: id)?.resume(throwing: JSONRPCError.timeout) }
 
     private func notifyInitialized() throws { try send(JSONEncoder().encode(JSONRPCInitializedNotification(method: "initialized"))) }
     private func send(_ data: Data) throws { guard let input else { throw JSONRPCError.launchFailed }; input.write(data); input.write(Data([0x0A])) }
@@ -98,6 +95,7 @@ actor JSONRPCClient {
             let line = readBuffer.prefix(upTo: newline)
             readBuffer.removeSubrange(...newline)
             guard let envelope = try? JSONDecoder().decode(ResponseID.self, from: Data(line)), let id = envelope.id, let continuation = continuations.removeValue(forKey: id) else { continue }
+            timeouts.removeValue(forKey: id)?.cancel()
             continuation.resume(returning: Data(line))
         }
     }

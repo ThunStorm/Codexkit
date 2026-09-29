@@ -14,10 +14,14 @@ final class AppState: ObservableObject {
     private let locator = CodexProcessLocator()
     private var rpcClient: JSONRPCClient?
     private var refreshTimer: Timer?
+    private var isRefreshing = false
+    private var isStopped = false
+    private var retryDelay: TimeInterval = 10
 
-    init() { scheduleRefreshes() }
+    init() {}
 
     func stop() {
+        isStopped = true
         refreshTimer?.invalidate()
         refreshTimer = nil
         Task { [rpcClient] in await rpcClient?.close() }
@@ -43,18 +47,22 @@ final class AppState: ObservableObject {
     func start() { refresh() }
 
     func refresh() {
+        guard !isRefreshing, !isStopped else { return }
+        refreshTimer?.invalidate()
+        isRefreshing = true
         connection = .connecting
         Task { [weak self] in
             guard let self else { return }
-            guard let executable = self.locator.locate() else {
-                self.connection = .failed("未找到 Codex CLI")
-                self.usage = .unavailable(reason: "未找到 Codex CLI")
-                self.quotaWindows = []
-                return
+            var succeeded = false
+            defer {
+                self.isRefreshing = false
+                if !self.isStopped { self.scheduleRefresh(after: succeeded ? 60 : self.retryDelay) }
+                self.retryDelay = succeeded ? 10 : min(self.retryDelay * 2, 60)
             }
-            let client: JSONRPCClient
-            if let existing = self.rpcClient { client = existing } else { client = JSONRPCClient(executableURL: executable); self.rpcClient = client }
             do {
+                guard let executable = self.locator.locate() else { throw JSONRPCError.executableNotFound }
+                let client: JSONRPCClient
+                if let existing = self.rpcClient { client = existing } else { client = JSONRPCClient(executableURL: executable); self.rpcClient = client }
                 try await client.initialize()
                 let account: AccountReadResponse = try await client.request(method: "account/read", params: AccountReadParams())
                 // `requiresOpenaiAuth` describes whether OpenAI auth is needed for this transport;
@@ -64,15 +72,14 @@ final class AppState: ObservableObject {
                 let windows = response.allWindows()
                 self.quotaWindows = windows
                 guard let selected = UsageSelector.selectDisplayedWindow(windows) else {
-                    self.usage = .unavailable(reason: "没有可显示的 5 小时或一周额度窗口")
-                    self.connection = .connected
-                    self.lastUpdatedAt = .now
-                    return
+                    throw JSONRPCError.protocolError("没有可显示的 5 小时或一周额度窗口")
                 }
                 self.usage = .available(selected)
                 self.connection = .connected
                 self.lastUpdatedAt = .now
+                succeeded = true
             } catch {
+                if let client = self.rpcClient { await client.close(); self.rpcClient = nil }
                 self.connection = .failed(error.localizedDescription)
                 self.usage = .unavailable(reason: error.localizedDescription)
                 self.quotaWindows = []
@@ -89,8 +96,8 @@ final class AppState: ObservableObject {
         activity = TaskAggregator.aggregate(tasks: tasks, latestCompletion: latestCompletion, sourceAvailable: false)
     }
 
-    private func scheduleRefreshes() {
-        refreshTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
+    private func scheduleRefresh(after interval: TimeInterval) {
+        refreshTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: false) { [weak self] _ in
             Task { @MainActor in self?.markStaleIfNeeded(); self?.refresh() }
         }
     }

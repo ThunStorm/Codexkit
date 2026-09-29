@@ -53,6 +53,22 @@ final class DomainTests: XCTestCase {
         XCTAssertNotNil(account.account)
         XCTAssertTrue(account.requiresOpenaiAuth)
     }
+    func testSilentAppServerRequestTimesOut() async throws {
+        let executable = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try Data("#!/bin/sh\nwhile read line; do :; done\n".utf8).write(to: executable)
+        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: executable.path)
+        defer { try? FileManager.default.removeItem(at: executable) }
+        let client = JSONRPCClient(executableURL: executable)
+        let started = Date()
+        do {
+            let _: RateLimitsReadResponse = try await client.requestWithoutParams(method: "account/rateLimits/read", timeout: 0.2)
+            XCTFail("无响应的 app-server 应触发超时")
+        } catch {
+            guard case JSONRPCError.timeout = error else { XCTFail("预期超时，实际：\(error)"); await client.close(); return }
+        }
+        XCTAssertLessThan(Date().timeIntervalSince(started), 2)
+        await client.close()
+    }
     func testAttentionTakesPriority() {
         let task = RunningTaskSummary(id: "1", threadID: nil, displayTitle: "测试", phase: .waitingForApproval, startedAt: now, updatedAt: now, attentionReason: .commandApproval)
         XCTAssertEqual(TaskAggregator.aggregate(tasks: [task], latestCompletion: nil, sourceAvailable: true), .needsAttention(reason: .commandApproval))
