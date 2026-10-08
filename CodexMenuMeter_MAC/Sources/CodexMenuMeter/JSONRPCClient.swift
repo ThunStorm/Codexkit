@@ -8,6 +8,8 @@ actor JSONRPCClient {
     private let executableURL: URL
     private var process: Process?
     private var input: FileHandle?
+    private var output: FileHandle?
+    private var generation = 0
     private var continuations: [Int: CheckedContinuation<Data, Error>] = [:]
     private var timeouts: [Int: Task<Void, Never>] = [:]
     private var nextID = 1
@@ -17,7 +19,9 @@ actor JSONRPCClient {
     init(executableURL: URL) { self.executableURL = executableURL }
 
     func connect() throws {
-        guard process == nil else { return }
+        if let process { if process.isRunning { return }; close() }
+        generation += 1
+        let generation = generation
         let process = Process()
         process.executableURL = executableURL
         process.arguments = ["app-server", "--stdio"]
@@ -27,18 +31,33 @@ actor JSONRPCClient {
         let stdin = Pipe(), stdout = Pipe()
         process.standardInput = stdin
         process.standardOutput = stdout
-        process.standardError = Pipe()
+        // stderr is diagnostic output, not part of the RPC transport. An unread pipe can block the server.
+        process.standardError = FileHandle.nullDevice
         stdout.fileHandleForReading.readabilityHandler = { [weak self] handle in
             let data = handle.availableData
-            guard !data.isEmpty else { Task { await self?.close() }; return }
-            Task { await self?.receive(data) }
+            guard !data.isEmpty else {
+                // EOF stays readable until the handler is removed; otherwise it creates tasks forever.
+                handle.readabilityHandler = nil
+                Task { await self?.connectionEnded(generation: generation) }
+                return
+            }
+            Task { await self?.receive(data, generation: generation) }
         }
-        do { try process.run() } catch { throw JSONRPCError.launchFailed }
+        do { try process.run() } catch {
+            stdout.fileHandleForReading.readabilityHandler = nil
+            try? stdin.fileHandleForWriting.close(); try? stdin.fileHandleForReading.close()
+            try? stdout.fileHandleForWriting.close(); try? stdout.fileHandleForReading.close()
+            throw JSONRPCError.launchFailed
+        }
+        try? stdin.fileHandleForReading.close()
+        try? stdout.fileHandleForWriting.close()
         self.process = process
         self.input = stdin.fileHandleForWriting
+        self.output = stdout.fileHandleForReading
     }
 
     func initialize() async throws {
+        try connect()
         guard !didInitialize else { return }
         struct Params: Encodable { let clientInfo: ClientInfo; let capabilities: Capabilities
             struct ClientInfo: Encodable { let name: String; let version: String }
@@ -71,7 +90,17 @@ actor JSONRPCClient {
         return result
     }
 
-    func close() { if process?.isRunning == true { process?.terminate() }; process = nil; input = nil; didInitialize = false; readBuffer = Data(); timeouts.values.forEach { $0.cancel() }; timeouts = [:]; continuations.values.forEach { $0.resume(throwing: JSONRPCError.launchFailed) }; continuations = [:] }
+    func close() {
+        generation += 1
+        output?.readabilityHandler = nil
+        try? output?.close(); try? input?.close()
+        if process?.isRunning == true { process?.terminate() }
+        process = nil; input = nil; output = nil; didInitialize = false; readBuffer = Data()
+        timeouts.values.forEach { $0.cancel() }; timeouts = [:]
+        continuations.values.forEach { $0.resume(throwing: JSONRPCError.launchFailed) }; continuations = [:]
+    }
+
+    private func connectionEnded(generation: Int) { if generation == self.generation { close() } }
 
     private func waitForResponse(id: Int, payload: Data, timeout: TimeInterval) async throws -> Data {
         try await withCheckedThrowingContinuation { continuation in
@@ -87,9 +116,10 @@ actor JSONRPCClient {
     private func expire(id: Int) { timeouts.removeValue(forKey: id); continuations.removeValue(forKey: id)?.resume(throwing: JSONRPCError.timeout) }
 
     private func notifyInitialized() throws { try send(JSONEncoder().encode(JSONRPCInitializedNotification(method: "initialized"))) }
-    private func send(_ data: Data) throws { guard let input else { throw JSONRPCError.launchFailed }; input.write(data); input.write(Data([0x0A])) }
+    private func send(_ data: Data) throws { guard let input else { throw JSONRPCError.launchFailed }; try input.write(contentsOf: data + Data([0x0A])) }
 
-    private func receive(_ data: Data) {
+    private func receive(_ data: Data, generation: Int) {
+        guard generation == self.generation else { return }
         readBuffer.append(data)
         while let newline = readBuffer.firstIndex(of: 0x0A) {
             let line = readBuffer.prefix(upTo: newline)
@@ -98,6 +128,7 @@ actor JSONRPCClient {
             timeouts.removeValue(forKey: id)?.cancel()
             continuation.resume(returning: Data(line))
         }
+        if readBuffer.count > 1_048_576 { close() }
     }
 }
 

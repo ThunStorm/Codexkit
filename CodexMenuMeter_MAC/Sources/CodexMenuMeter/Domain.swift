@@ -1,8 +1,8 @@
 import Foundation
 
-enum UsageWindowKind: String, Sendable, Equatable { case fiveHour, weekly, monthly, unknown }
+enum UsageWindowKind: String, Sendable, Equatable, Codable { case fiveHour, weekly, monthly, unknown }
 
-struct UsageWindow: Sendable, Equatable, Identifiable {
+struct UsageWindow: Sendable, Equatable, Identifiable, Codable {
     let id: String
     let kind: UsageWindowKind
     let usedPercent: Double

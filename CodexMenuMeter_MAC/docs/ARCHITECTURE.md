@@ -22,6 +22,8 @@
 
 UI 永不直接调用 RPC。所有不可用、过期和错误状态先归入 `AppState`，再生成 `MenuBarDisplayState`。
 
+暂时读取失败与长时间未更新保留最后成功的数值，`quotaStatusMessage` 提示缓存状态，`lastUpdatedAt` 保留原时间。UserDefaults 存储额度窗口、成功时间和账户指纹；确认未登录、账户指纹变化或 API key 账户时清空，不能把旧账户额度用于新账户。缓存不会根据重置时间推算新值。
+
 状态栏主数字由 `selectDisplayedWindow` 选择，优先 5 小时、缺失时回退周额度；例外是周额度窗口剩余 0% 时直接显示周额度窗口（即状态栏显示 0%），不再展示 5 小时剩余。菜单由 `selectMenuWindows` 选择：存在 5 小时窗口时依次展示 5 小时和周额度；任一窗口未返回则隐藏对应行。
 
 ## 生命周期
@@ -29,6 +31,8 @@ UI 永不直接调用 RPC。所有不可用、过期和错误状态先归入 `Ap
 `AppDelegate` 采用 accessory activation policy，因此不显示 Dock 图标。它监测 `com.openai.codex` 的启动；若该应用已运行或随后启动，才创建 `AppState` 与菜单栏状态项。
 
 Codex 更新或重启时可能短暂出现新旧两个同标识进程。收到退出通知后应用延迟一秒重新检查 `NSWorkspace`：仍有 Codex 实例则保持或恢复状态项，确认全部退出才隐藏，避免新进程先启动、旧进程后退出造成状态项永久消失。
+
+连接关闭时取消读取回调并关闭管道；EOF 回调只执行一次，连接代次隔离延迟到达的旧回调。stderr 不创建未读取的管道。停止显示时显式移除 NSStatusItem，防止重启桌面应用后累积状态项。
 
 启用“随 Codex / ChatGPT 启动”时，`SMAppService.mainApp` 把本应用注册为登录项。登录项负责等待 Codex/ChatGPT；macOS 不提供让 ChatGPT 直接启动第三方应用的公开机制。
 

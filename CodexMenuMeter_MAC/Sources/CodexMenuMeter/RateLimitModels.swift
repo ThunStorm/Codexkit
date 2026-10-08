@@ -1,11 +1,22 @@
 import Foundation
+import CryptoKit
 
 struct AccountReadParams: Encodable, Sendable { let refreshToken = false }
 struct AccountReadResponse: Decodable, Sendable {
     let account: AccountMetadata?
     let requiresOpenaiAuth: Bool
 }
-struct AccountMetadata: Decodable, Sendable { let type: String }
+struct AccountMetadata: Decodable, Sendable {
+    let type: String
+    let email: String?
+    var fingerprint: String { SHA256.hash(data: Data("\(type)|\(email ?? "")".utf8)).map { String(format: "%02x", $0) }.joined() }
+}
+
+struct QuotaCache: Codable {
+    let accountFingerprint: String
+    let windows: [UsageWindow]
+    let updatedAt: Date
+}
 
 struct RateLimitSnapshot: Codable, Sendable, Equatable {
     var primary: RateLimitWindow?

@@ -33,6 +33,11 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     @objc private func showMenu() { rebuildMenu(); statusItem.button?.performClick(nil) }
     func menuNeedsUpdate(_ menu: NSMenu) { rebuildMenu() }
 
+    func stop() {
+        cancellable?.cancel(); settingsCancellable?.cancel()
+        NSStatusBar.system.removeStatusItem(statusItem)
+    }
+
     private func updateView() {
         let display = state.display
         contentView.update(percentage: display.percentageText, color: statusColor(for: state.activity), showsStatusDot: state.showsTaskStatusDot, accessibilityLabel: display.accessibilityLabel)
@@ -50,6 +55,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             add("重置：\(formatReset(window.resetsAt))", enabled: false)
         }
         add("更新：\(formatUpdated(state.lastUpdatedAt))", enabled: false)
+        if let message = state.quotaStatusMessage { add(message, enabled: false) }
         menu.addItem(.separator())
         addAction("打开 Codex", #selector(openCodex))
         addAction("刷新", #selector(refresh))
